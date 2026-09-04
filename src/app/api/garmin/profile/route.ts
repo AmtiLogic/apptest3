@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const session = await requireSession();
     const { data, tokens } = await getProfile(session.tokens);
-    persistRefresh(session.sessionId, tokens);
+    persistRefresh(tokens);
     return NextResponse.json(data);
   } catch (error) {
     return handleError(error);

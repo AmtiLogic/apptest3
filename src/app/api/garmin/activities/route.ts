@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     const start = Math.max(Number(params.get("start") ?? 0), 0);
     const limit = Math.min(Math.max(Number(params.get("limit") ?? 20), 1), 100);
     const { data, tokens } = await getActivities(session.tokens, start, limit);
-    persistRefresh(session.sessionId, tokens);
+    persistRefresh(tokens);
     return NextResponse.json(data);
   } catch (error) {
     return handleError(error);

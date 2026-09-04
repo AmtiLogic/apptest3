@@ -230,6 +230,8 @@ async function requestOAuth1Token(ticket: string): Promise<OAuth1Token> {
  * the user's password.
  */
 export async function exchangeForOAuth2(oauth1: OAuth1Token): Promise<OAuth2Token> {
+  if (MOCK_ENABLED) return MOCK_TOKENS.oauth2;
+
   const consumer = await consumerCredentials();
   const url = `${API_ORIGIN}/oauth-service/oauth/exchange/user/2.0`;
   const bodyParams: Array<[string, string]> = oauth1.mfaToken ? [["mfa_token", oauth1.mfaToken]] : [];

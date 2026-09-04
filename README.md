@@ -29,7 +29,7 @@ do not deploy it as a service for other people. If you need something durable or
 multi-user, apply to the Developer Program and swap the data layer over (see
 *Moving to the official API* below).
 
-## Running it
+## Running it locally
 
 ```bash
 npm install
@@ -47,6 +47,64 @@ GARMIN_MOCK=1 npm run dev
 
 Any email and password are accepted in mock mode and the app serves fixture data.
 
+## Using it on your phone
+
+The app is built mobile-first: two-up stat tiles, an activity list that reflows
+from a table into cards, charts that respond to taps as well as hover, and a web
+manifest so **Add to Home Screen** gives you a real app icon and a fullscreen,
+browser-chrome-free window.
+
+You still need somewhere to run it, because of one hard constraint:
+
+> **GitHub Pages cannot host this app.** Pages serves static files with no Node
+> runtime, and the Garmin sign-in *must* happen server-side: `sso.garmin.com` and
+> `connectapi.garmin.com` send no CORS headers, so a page served from
+> `github.io` is blocked by the browser from reading their responses, and the
+> cookie handoff the SSO flow depends on is cross-origin too. Routing it through
+> a public CORS proxy would hand your Garmin password to a third party, so that
+> is not a workaround. The same applies to any static-only host.
+
+Pick whichever of these suits you:
+
+### Vercel — easiest, free, no card, all from a browser
+
+1. Go to [vercel.com/new](https://vercel.com/new), sign in with GitHub, and
+   import this repository. It detects Next.js on its own; accept the defaults.
+2. Before deploying, add one environment variable:
+   `APP_SECRET` = the output of `openssl rand -base64 32` (any 32+ random
+   characters).
+3. Deploy. You get an HTTPS URL like `your-app.vercel.app` — open it on your
+   phone and use **Share → Add to Home Screen**.
+
+Vercel runs the app across short-lived instances, which the app is built for:
+the session lives in an encrypted cookie rather than server memory.
+
+### Any Docker host — Render, Fly.io, Railway, Koyeb, a machine at home
+
+A `Dockerfile` is included and builds a standalone image.
+
+```bash
+docker build -t garmin-dashboard .
+docker run -p 3000:3000 -e APP_SECRET="$(openssl rand -base64 32)" garmin-dashboard
+```
+
+On Render: New → Web Service → point at this repo → Docker → add `APP_SECRET`.
+
+### Keep it entirely private — your own machine + Tailscale
+
+Run `npm run build && npm start` on a computer or Raspberry Pi you own, install
+[Tailscale](https://tailscale.com) on it and on your phone, and open the
+machine's Tailscale address from anywhere. Nothing is exposed to the public
+internet and your Garmin password never leaves hardware you control. This is the
+most private option; the trade-off is that the machine has to stay on.
+
+### One thing to decide before deploying anywhere shared
+
+On Vercel or a Docker host, anyone who learns your URL reaches the Garmin
+sign-in page. They cannot see your data without your Garmin password, but if you
+would rather the app not be publicly reachable at all, use the Tailscale option,
+or put your host's own access control in front of it.
+
 ## How credentials are handled
 
 - Your password is sent to Garmin's SSO endpoint to obtain a token, and is **never
@@ -54,9 +112,13 @@ Any email and password are accepted in mock mode and the app serves fixture data
   form as soon as the request returns.
 - The resulting OAuth tokens are held **in server memory only**, keyed by an
   opaque, `httpOnly` session cookie. Tokens never reach the browser.
-- Because sessions live in memory, they are lost on server restart, and the app
-  will not work correctly across multiple server instances (a load-balanced
-  deployment would need a shared store — see *Limitations*).
+- The session cookie is encrypted and authenticated with AES-256-GCM under
+  `APP_SECRET`, so its contents cannot be read or forged by the browser. It holds
+  only the small, long-lived OAuth1 token; the large bearer token is cached in
+  process memory and re-minted on demand, so nothing breaks when a host moves you
+  between instances.
+- Rotating `APP_SECRET` invalidates every existing session, which is how you sign
+  all devices out.
 - The long-lived OAuth1 token is used to mint new bearer tokens automatically, so
   your password is needed only once per session.
 
@@ -78,7 +140,7 @@ src/lib/garmin/
   client.ts     authenticated calls to connectapi.garmin.com, with token refresh
   endpoints.ts  typed wrappers for the endpoints this app uses
   mock.ts       fixture data for GARMIN_MOCK=1
-src/lib/session.ts   in-memory session store behind an httpOnly cookie
+src/lib/session.ts       encrypted, stateless session cookie (+ crypto-cookie.ts)
 src/app/api/         auth and data routes (the browser never talks to Garmin)
 src/components/      stat tiles and the two charts
 ```
@@ -105,7 +167,9 @@ against an independent HMAC-SHA1 reference computed with `openssl`.
   exercised without real Garmin credentials and network access to `garmin.com`;
   the tests cover the signing and parsing logic underneath it. If Garmin changes
   its login page, `sso.ts` is where it will break.
-- Sessions are in-memory and single-process (see above).
+- Sessions are stateless cookies, so they survive restarts and multiple
+  instances — but `APP_SECRET` must be set in production or the app refuses to
+  serve requests.
 - Units are metric throughout — distances in km, pace in min/km.
 - Dates use the server's local timezone.
 - Garmin rate-limits aggressive polling; repeated sign-ins in a short window can

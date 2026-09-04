@@ -7,7 +7,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     const session = await requireSession();
     const { id } = await context.params;
     const { data, tokens } = await getActivity(session.tokens, id);
-    persistRefresh(session.sessionId, tokens);
+    persistRefresh(tokens);
     return NextResponse.json(data);
   } catch (error) {
     return handleError(error);

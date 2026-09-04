@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useElementWidth } from "@/lib/useElementWidth";
 
 export interface StepsPoint {
   date: string;
@@ -8,10 +9,8 @@ export interface StepsPoint {
   goal: number | null;
 }
 
-// Authored close to the rendered width so the 24px mark cap survives scaling.
-const WIDTH = 940;
-const HEIGHT = 260;
-const PAD = { top: 18, right: 12, bottom: 26, left: 44 };
+const HEIGHT = 220;
+const PAD = { top: 20, right: 8, bottom: 24, left: 40 };
 const MAX_BAR = 24;
 
 /** Rounded at the data end, square at the baseline. */
@@ -41,7 +40,8 @@ function dayLabel(date: string): string {
 }
 
 export function StepsChart({ data }: { data: StepsPoint[] }) {
-  const [hover, setHover] = useState<number | null>(null);
+  const [active, setActive] = useState<number | null>(null);
+  const { ref, width } = useElementWidth<HTMLDivElement>();
 
   if (data.length === 0) return <p className="empty">No step data for this range.</p>;
 
@@ -50,52 +50,42 @@ export function StepsChart({ data }: { data: StepsPoint[] }) {
   const ceiling = peak * 1.12;
   const ticks = niceTicks(peak);
 
-  const plotW = WIDTH - PAD.left - PAD.right;
+  const plotW = Math.max(width - PAD.left - PAD.right, 120);
   const plotH = HEIGHT - PAD.top - PAD.bottom;
   const band = plotW / data.length;
   // Leave the band's leftover as air rather than filling the slot.
   const barW = Math.min(MAX_BAR, band * 0.62);
   const yOf = (v: number) => PAD.top + plotH - (v / ceiling) * plotH;
 
+  // Thin the date axis when the bands get too tight for a legible label.
+  const stride = band >= 26 ? 1 : band >= 16 ? 2 : 3;
   const best = data.reduce((a, b) => (b.steps > a.steps ? b : a), data[0]);
-  const active = hover === null ? null : data[hover];
+  const shown = active === null ? null : data[active];
 
   return (
-    <figure style={{ margin: 0 }}>
+    <figure style={{ margin: 0 }} ref={ref}>
       <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        width="100%"
+        viewBox={`0 0 ${width} ${HEIGHT}`}
+        width={width}
+        height={HEIGHT}
+        style={{ display: "block", touchAction: "pan-y" }}
         role="img"
         aria-label={`Daily steps for the last ${data.length} days`}
-        onMouseLeave={() => setHover(null)}
+        onPointerLeave={() => setActive(null)}
       >
         {ticks.map((t) => (
           <g key={t}>
-            <line
-              x1={PAD.left}
-              x2={WIDTH - PAD.right}
-              y1={yOf(t)}
-              y2={yOf(t)}
-              stroke="var(--gridline)"
-              strokeWidth={1}
-            />
-            <text x={PAD.left - 8} y={yOf(t) + 4} textAnchor="end" fontSize={10} fill="var(--text-muted)">
-              {t.toLocaleString()}
+            <line x1={PAD.left} x2={width - PAD.right} y1={yOf(t)} y2={yOf(t)} stroke="var(--gridline)" strokeWidth={1} />
+            <text x={PAD.left - 6} y={yOf(t) + 4} textAnchor="end" fontSize={10} fill="var(--text-muted)">
+              {t >= 1000 ? `${t / 1000}k` : t}
             </text>
           </g>
         ))}
 
         {goal ? (
           <>
-            <line
-              x1={PAD.left}
-              x2={WIDTH - PAD.right}
-              y1={yOf(goal)}
-              y2={yOf(goal)}
-              stroke="var(--baseline)"
-              strokeWidth={1}
-            />
-            <text x={WIDTH - PAD.right} y={yOf(goal) - 5} textAnchor="end" fontSize={10} fill="var(--text-muted)">
+            <line x1={PAD.left} x2={width - PAD.right} y1={yOf(goal)} y2={yOf(goal)} stroke="var(--baseline)" strokeWidth={1} />
+            <text x={width - PAD.right} y={yOf(goal) - 5} textAnchor="end" fontSize={10} fill="var(--text-muted)">
               goal {goal.toLocaleString()}
             </text>
           </>
@@ -104,21 +94,23 @@ export function StepsChart({ data }: { data: StepsPoint[] }) {
         {data.map((d, i) => {
           const x = PAD.left + band * i + (band - barW) / 2;
           const y = yOf(d.steps);
-          const h = PAD.top + plotH - y;
           return (
             <path
               key={d.date}
-              d={columnPath(x, y, barW, h)}
+              d={columnPath(x, y, barW, PAD.top + plotH - y)}
               fill="var(--series-1)"
-              opacity={hover === null || hover === i ? 1 : 0.45}
+              opacity={active === null || active === i ? 1 : 0.45}
             />
           );
         })}
 
-        {/* One direct label, on the extreme; the axis and tooltip carry the rest. */}
-        {best.steps > 0 ? (
+        {/* One direct label, on the extreme; the axis and the readout carry the rest. */}
+        {best.steps > 0 && active === null ? (
           <text
-            x={PAD.left + band * data.indexOf(best) + band / 2}
+            x={Math.min(
+              Math.max(PAD.left + band * data.indexOf(best) + band / 2, PAD.left + 20),
+              width - PAD.right - 20,
+            )}
             y={yOf(best.steps) - 6}
             textAnchor="middle"
             fontSize={11}
@@ -129,29 +121,25 @@ export function StepsChart({ data }: { data: StepsPoint[] }) {
           </text>
         ) : null}
 
-        <line
-          x1={PAD.left}
-          x2={WIDTH - PAD.right}
-          y1={PAD.top + plotH}
-          y2={PAD.top + plotH}
-          stroke="var(--baseline)"
-          strokeWidth={1}
-        />
+        <line x1={PAD.left} x2={width - PAD.right} y1={PAD.top + plotH} y2={PAD.top + plotH} stroke="var(--baseline)" strokeWidth={1} />
 
-        {data.map((d, i) => (
-          <text
-            key={`x-${d.date}`}
-            x={PAD.left + band * i + band / 2}
-            y={HEIGHT - 8}
-            textAnchor="middle"
-            fontSize={10}
-            fill="var(--text-muted)"
-          >
-            {dayLabel(d.date)}
-          </text>
-        ))}
+        {data.map((d, i) =>
+          (data.length - 1 - i) % stride === 0 ? (
+            <text
+              key={`x-${d.date}`}
+              x={PAD.left + band * i + band / 2}
+              y={HEIGHT - 7}
+              textAnchor="middle"
+              fontSize={10}
+              fill="var(--text-muted)"
+            >
+              {dayLabel(d.date)}
+            </text>
+          ) : null,
+        )}
 
-        {/* Hit targets are the full band, which is wider than the bar. */}
+        {/* Hit targets span the whole band, which is wider than the bar, and
+            respond to touch as well as hover. */}
         {data.map((d, i) => (
           <rect
             key={`hit-${d.date}`}
@@ -160,15 +148,20 @@ export function StepsChart({ data }: { data: StepsPoint[] }) {
             width={band}
             height={plotH}
             fill="transparent"
-            onMouseEnter={() => setHover(i)}
+            onPointerEnter={() => setActive(i)}
+            onPointerDown={() => setActive(i)}
           />
         ))}
       </svg>
 
-      <figcaption style={{ fontSize: 12, color: "var(--text-secondary)", minHeight: 18 }}>
-        {active
-          ? `${active.date} — ${active.steps.toLocaleString()} steps`
-          : "Hover a column for the exact count."}
+      <figcaption className="chart-readout">
+        {shown ? (
+          <>
+            <strong>{shown.steps.toLocaleString()}</strong> steps · {shown.date}
+          </>
+        ) : (
+          "Tap or hover a column for the exact count."
+        )}
       </figcaption>
     </figure>
   );

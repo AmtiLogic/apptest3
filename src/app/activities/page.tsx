@@ -42,35 +42,39 @@ export default function ActivitiesPage() {
         {activities.length === 0 && !loading ? (
           <p className="empty">No activities found.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Activity</th>
-                <th>When</th>
-                <th>Distance</th>
-                <th>Time</th>
-                <th>Avg HR</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activities.map((activity) => (
-                <tr key={activity.activityId}>
-                  <td className="name">
-                    <Link href={`/activities/${activity.activityId}`}>
-                      {activity.activityName || formatActivityType(activity.activityType?.typeKey)}
-                    </Link>
-                    <div className="muted" style={{ fontSize: 12 }}>
-                      {formatActivityType(activity.activityType?.typeKey)}
-                    </div>
-                  </td>
-                  <td>{formatDateTime(activity.startTimeLocal)}</td>
-                  <td>{formatDistance(activity.distance)}</td>
-                  <td>{formatDuration(activity.duration)}</td>
-                  <td>{activity.averageHR ? Math.round(activity.averageHR) : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="rows">
+            <div className="row-head" aria-hidden>
+              <span>Activity</span>
+              <span>When</span>
+              <span>Distance</span>
+              <span>Time</span>
+              <span>Avg HR</span>
+            </div>
+
+            {activities.map((activity) => (
+              <Link className="row" key={activity.activityId} href={`/activities/${activity.activityId}`}>
+                <span className="row-name">
+                  {activity.activityName || formatActivityType(activity.activityType?.typeKey)}
+                  <span className="row-type">{formatActivityType(activity.activityType?.typeKey)}</span>
+                </span>
+                <span className="row-when">{formatDateTime(activity.startTimeLocal)}</span>
+                <span className="row-stats">
+                  <span>
+                    <span className="key">Distance </span>
+                    {formatDistance(activity.distance)}
+                  </span>
+                  <span>
+                    <span className="key">Time </span>
+                    {formatDuration(activity.duration)}
+                  </span>
+                  <span>
+                    <span className="key">Avg HR </span>
+                    {activity.averageHR ? Math.round(activity.averageHR) : "—"}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
         )}
 
         <div style={{ marginTop: 14 }}>

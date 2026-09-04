@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const params = new URL(request.url).searchParams;
     const days = Math.min(Math.max(Number(params.get("days") ?? 14), 1), 28);
     const { data, tokens } = await getStepsRange(session.tokens, isoDate(-(days - 1)), isoDate());
-    persistRefresh(session.sessionId, tokens);
+    persistRefresh(tokens);
     return NextResponse.json(data);
   } catch (error) {
     return handleError(error);
