@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { IS_STATIC_DEMO } from "@/lib/staticDemo";
 
 type Step = "credentials" | "mfa";
 
@@ -56,6 +58,27 @@ export default function LoginPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (IS_STATIC_DEMO) {
+    return (
+      <main className="login-wrap">
+        <div className="card login-card">
+          <h1 style={{ fontSize: 18, margin: "0 0 4px" }}>Garmin Dashboard</h1>
+          <p className="sub">
+            This is the GitHub Pages build. Pages serves static files and cannot run
+            the server that signs in to Garmin, so there is nothing to sign in to here.
+          </p>
+          <Link className="button primary-link" href="/">
+            Explore with sample data
+          </Link>
+          <p className="sub" style={{ marginTop: 14, marginBottom: 0 }}>
+            To read your own Garmin data, deploy the app to a host that runs Node —{" "}
+            <Link href="/setup/">the setup page</Link> walks through it.
+          </p>
+        </div>
+      </main>
+    );
   }
 
   return (

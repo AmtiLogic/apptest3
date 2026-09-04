@@ -436,3 +436,63 @@ input:focus {
   font-size: 13px;
   padding: 8px 0;
 }
+
+.notice.banner {
+  border-color: var(--series-1);
+  color: var(--text-secondary);
+  display: block;
+}
+
+.notice.banner strong {
+  color: var(--text-primary);
+}
+
+.notice.banner a {
+  color: var(--series-1);
+  white-space: nowrap;
+}
+
+.button.primary-link {
+  background: var(--series-1);
+  border-color: var(--series-1);
+  color: #fff;
+  width: 100%;
+  justify-content: center;
+}
+
+.prose h2 {
+  font-size: 15px;
+  margin: 0 0 10px;
+}
+
+.prose p,
+.prose li {
+  color: var(--text-secondary);
+  margin: 0 0 10px;
+}
+
+.prose li {
+  margin-bottom: 8px;
+}
+
+.prose ol {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.prose code {
+  font-size: 12.5px;
+  background: var(--plane);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  overflow-wrap: anywhere;
+}
+
+.prose .card {
+  margin-bottom: 14px;
+}
+
+.prose .card:last-child {
+  margin-bottom: 0;
+}

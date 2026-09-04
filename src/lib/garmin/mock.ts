@@ -7,6 +7,9 @@ import type { GarminTokens } from "./types";
  */
 export const MOCK_ENABLED = process.env.GARMIN_MOCK === "1";
 
+/** The sample activities, so a static export knows which pages to render. */
+export const DEMO_ACTIVITY_IDS = Array.from({ length: 12 }, (_, i) => String(1000 + i));
+
 export const MOCK_TOKENS: GarminTokens = {
   oauth1: { oauthToken: "mock", oauthTokenSecret: "mock", domain: "garmin.com" },
   oauth2: {

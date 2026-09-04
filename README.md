@@ -54,19 +54,38 @@ from a table into cards, charts that respond to taps as well as hover, and a web
 manifest so **Add to Home Screen** gives you a real app icon and a fullscreen,
 browser-chrome-free window.
 
-You still need somewhere to run it, because of one hard constraint:
+You still need somewhere to run it for **live** Garmin data, because of one hard
+constraint:
 
-> **GitHub Pages cannot host this app.** Pages serves static files with no Node
-> runtime, and the Garmin sign-in *must* happen server-side: `sso.garmin.com` and
+> **GitHub Pages cannot sign in to Garmin.** Pages serves static files with no
+> Node runtime, and the sign-in *must* happen server-side: `sso.garmin.com` and
 > `connectapi.garmin.com` send no CORS headers, so a page served from
 > `github.io` is blocked by the browser from reading their responses, and the
 > cookie handoff the SSO flow depends on is cross-origin too. Routing it through
 > a public CORS proxy would hand your Garmin password to a third party, so that
 > is not a workaround. The same applies to any static-only host.
 
-Pick whichever of these suits you:
+### What is published to GitHub Pages
 
-### Vercel — easiest, free, no card, all from a browser
+`.github/workflows/deploy-pages.yml` builds a static bundle on every push and
+publishes it, so the app itself is browsable at the Pages URL — every screen,
+on a phone, installable to the home screen — running on **sample data**, with a
+banner saying so and a `/setup` page explaining how to connect real data.
+
+**One setting has to change for this to take effect:** in
+*Settings → Pages → Source*, switch from **Deploy from a branch** to **GitHub
+Actions**. Left on "Deploy from a branch", Pages runs Jekyll, which renders this
+README as the site instead of building the app.
+
+To build the same bundle locally:
+
+```bash
+npm run build:static      # writes out/
+```
+
+### Hosts that can serve live Garmin data
+
+#### Vercel — easiest, free, no card, all from a browser
 
 1. Go to [vercel.com/new](https://vercel.com/new), sign in with GitHub, and
    import this repository. It detects Next.js on its own; accept the defaults.
@@ -79,7 +98,7 @@ Pick whichever of these suits you:
 Vercel runs the app across short-lived instances, which the app is built for:
 the session lives in an encrypted cookie rather than server memory.
 
-### Any Docker host — Render, Fly.io, Railway, Koyeb, a machine at home
+#### Any Docker host — Render, Fly.io, Railway, Koyeb, a machine at home
 
 A `Dockerfile` is included and builds a standalone image.
 
@@ -90,7 +109,7 @@ docker run -p 3000:3000 -e APP_SECRET="$(openssl rand -base64 32)" garmin-dashbo
 
 On Render: New → Web Service → point at this repo → Docker → add `APP_SECRET`.
 
-### Keep it entirely private — your own machine + Tailscale
+#### Keep it entirely private — your own machine + Tailscale
 
 Run `npm run build && npm start` on a computer or Raspberry Pi you own, install
 [Tailscale](https://tailscale.com) on it and on your phone, and open the
@@ -98,7 +117,7 @@ machine's Tailscale address from anywhere. Nothing is exposed to the public
 internet and your Garmin password never leaves hardware you control. This is the
 most private option; the trade-off is that the machine has to stay on.
 
-### One thing to decide before deploying anywhere shared
+#### One thing to decide before deploying anywhere shared
 
 On Vercel or a Docker host, anyone who learns your URL reaches the Garmin
 sign-in page. They cannot see your data without your Garmin password, but if you
@@ -129,6 +148,7 @@ or put your host's own access control in front of it.
 | `/` | Steps, distance, calories, resting HR, Body Battery, active time; 14-day step chart; last night's sleep stages |
 | `/activities` | Paged activity history — type, date, distance, time, average HR |
 | `/activities/[id]` | Per-activity detail — pace, moving time, elevation, HR, cadence, power |
+| `/setup` | How to connect real data; shown from the sample-data banner |
 
 ## Architecture
 
@@ -139,10 +159,11 @@ src/lib/garmin/
                 -> OAuth1 token -> OAuth2 bearer token
   client.ts     authenticated calls to connectapi.garmin.com, with token refresh
   endpoints.ts  typed wrappers for the endpoints this app uses
-  mock.ts       fixture data for GARMIN_MOCK=1
+  mock.ts       fixture data for GARMIN_MOCK=1 and the Pages bundle
 src/lib/session.ts       encrypted, stateless session cookie (+ crypto-cookie.ts)
 src/app/api/         auth and data routes (the browser never talks to Garmin)
 src/components/      stat tiles and the two charts
+scripts/build-static.mjs  strips the server-only routes and exports for Pages
 ```
 
 The sign-in sequence mirrors the one implemented by the

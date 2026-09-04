@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { SleepChart, type SleepStage } from "@/components/SleepChart";
 import { StepsChart, type StepsPoint } from "@/components/StepsChart";
 import { Tile } from "@/components/Tile";
+import { DemoBanner } from "@/components/DemoBanner";
 import { TopBar } from "@/components/TopBar";
 import type { DailySummary, SleepSummary, SocialProfile, StepsForDay } from "@/lib/garmin/endpoints";
 import { apiGet } from "@/lib/fetcher";
@@ -84,6 +85,7 @@ export default function DashboardPage() {
   return (
     <main className="shell">
       <TopBar title="Today" who={profile.fullName ?? profile.displayName} />
+      <DemoBanner />
 
       <div className="grid">
         <Tile

@@ -1,10 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+/**
+ * GitHub Pages serves the app under /<repo>, so metadata URLs need that prefix.
+ * The manifest's own icon paths are relative, which needs no prefixing.
+ */
+const basePath = process.env.STATIC_EXPORT === "1" ? process.env.PAGES_BASE_PATH ?? "/apptest3" : "";
+
 export const metadata: Metadata = {
   title: "Garmin Dashboard",
   description: "A personal dashboard for your Garmin Connect data",
-  manifest: "/manifest.webmanifest",
+  manifest: `${basePath}/manifest.webmanifest`,
   appleWebApp: {
     capable: true,
     title: "Garmin",
@@ -12,8 +18,8 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    icon: [{ url: `${basePath}/icon.svg`, type: "image/svg+xml" }],
+    apple: [{ url: `${basePath}/apple-touch-icon.png`, sizes: "180x180" }],
   },
 };
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { IS_STATIC_DEMO } from "@/lib/staticDemo";
 
 export function TopBar({ title, who }: { title: string; who?: string | null }) {
   const router = useRouter();
@@ -25,9 +26,11 @@ export function TopBar({ title, who }: { title: string; who?: string | null }) {
         <Link className="button" href="/activities">
           Activities
         </Link>
-        <button type="button" onClick={signOut}>
-          Sign out
-        </button>
+        {IS_STATIC_DEMO ? null : (
+          <button type="button" onClick={signOut}>
+            Sign out
+          </button>
+        )}
       </nav>
     </header>
   );

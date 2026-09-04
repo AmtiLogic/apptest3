@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { DemoBanner } from "@/components/DemoBanner";
 import { TopBar } from "@/components/TopBar";
 import type { Activity } from "@/lib/garmin/endpoints";
 import { apiGet } from "@/lib/fetcher";
@@ -35,6 +36,7 @@ export default function ActivitiesPage() {
   return (
     <main className="shell">
       <TopBar title="Activities" />
+      <DemoBanner />
 
       {error ? <div className="notice error">{error}</div> : null}
 
