@@ -36,9 +36,8 @@ export default function SetupPage() {
             Open <code>vercel.com/new</code> and sign in with GitHub.
           </li>
           <li>
-            Import the <code>apptest3</code> repository and pick the branch{" "}
-            <code>claude/garmin-data-web-app-5nk32r</code>. Next.js is detected
-            automatically.
+            Import the <code>apptest3</code> repository. Next.js is detected
+            automatically and it deploys the <code>main</code> branch.
           </li>
           <li>
             Add one environment variable — <code>APP_SECRET</code> — set to 32 or

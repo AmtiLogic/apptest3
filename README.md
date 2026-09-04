@@ -68,7 +68,7 @@ constraint:
 ### What is published to GitHub Pages
 
 `.github/workflows/deploy-pages.yml` builds a static bundle on every push and
-publishes it, so the app itself is browsable at the Pages URL — every screen,
+publishes it from `main`, so the app itself is browsable at the Pages URL — every screen,
 on a phone, installable to the home screen — running on **sample data**, with a
 banner saying so and a `/setup` page explaining how to connect real data.
 
@@ -88,7 +88,8 @@ npm run build:static      # writes out/
 #### Vercel — easiest, free, no card, all from a browser
 
 1. Go to [vercel.com/new](https://vercel.com/new), sign in with GitHub, and
-   import this repository. It detects Next.js on its own; accept the defaults.
+   import this repository. It detects Next.js on its own and deploys `main`;
+   accept the defaults.
 2. Before deploying, add one environment variable:
    `APP_SECRET` = the output of `openssl rand -base64 32` (any 32+ random
    characters).

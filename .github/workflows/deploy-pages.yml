@@ -5,7 +5,7 @@ name: Deploy to GitHub Pages
 # publish the README instead of the app).
 on:
   push:
-    branches: [claude/garmin-data-web-app-5nk32r]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
