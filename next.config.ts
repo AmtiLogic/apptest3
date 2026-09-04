@@ -1,15 +1,17 @@
 import type { NextConfig } from "next";
 
 /**
- * Two build targets share this config.
+ * Three build targets share this config.
  *
- * - Default: the full app with API routes and middleware, for a host that runs
- *   Node (Vercel, Docker, a machine at home).
+ * - Default: the app as Vercel (or `next start`) expects it. Nothing special.
+ * - BUILD_STANDALONE=1: a self-contained server bundle, used by the Dockerfile.
+ *   Vercel does its own bundling, so this stays off there.
  * - STATIC_EXPORT=1: a static bundle for GitHub Pages. Pages has no server, so
  *   `scripts/build-static.mjs` strips the API routes and middleware first and
  *   the client falls back to sample data.
  */
 const isStatic = process.env.STATIC_EXPORT === "1";
+const isStandalone = process.env.BUILD_STANDALONE === "1";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -21,10 +23,9 @@ const nextConfig: NextConfig = {
         trailingSlash: true,
         images: { unoptimized: true },
       }
-    : {
-        // Emits a self-contained server bundle for the Docker image.
-        output: "standalone" as const,
-      }),
+    : isStandalone
+      ? { output: "standalone" as const }
+      : {}),
 };
 
 export default nextConfig;

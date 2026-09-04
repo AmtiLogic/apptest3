@@ -10,6 +10,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Produces .next/standalone, which the runner stage copies.
+ENV BUILD_STANDALONE=1
 RUN npm run build
 
 FROM node:22-alpine AS runner
