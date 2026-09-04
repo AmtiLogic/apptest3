@@ -1,9 +1,10 @@
+import { envOr } from "../env";
 import { CookieJar } from "./cookies";
 import { MOCK_ENABLED, MOCK_TOKENS } from "./mock";
 import { authorizationHeader } from "./oauth1";
 import { GarminError, type GarminTokens, type OAuth1Token, type OAuth2Token } from "./types";
 
-const DOMAIN = process.env.GARMIN_DOMAIN ?? "garmin.com";
+const DOMAIN = envOr(process.env.GARMIN_DOMAIN, "garmin.com");
 const SSO_ORIGIN = `https://sso.${DOMAIN}`;
 const API_ORIGIN = `https://connectapi.${DOMAIN}`;
 

@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { envOr } from "@/lib/env";
 import "./globals.css";
 
 /**
  * GitHub Pages serves the app under /<repo>, so metadata URLs need that prefix.
  * The manifest's own icon paths are relative, which needs no prefixing.
  */
-const basePath = process.env.STATIC_EXPORT === "1" ? process.env.PAGES_BASE_PATH ?? "/apptest3" : "";
+const basePath = process.env.STATIC_EXPORT === "1" ? envOr(process.env.PAGES_BASE_PATH, "/apptest3") : "";
 
 export const metadata: Metadata = {
   title: "Garmin Dashboard",
