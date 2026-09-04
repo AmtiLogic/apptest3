@@ -15,6 +15,7 @@ export default function ActivitiesPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [done, setDone] = useState(false);
+  const [syncedAt, setSyncedAt] = useState<Date | null>(null);
 
   async function loadMore(start: number) {
     setLoading(true);
@@ -22,6 +23,9 @@ export default function ActivitiesPage() {
       const page = await apiGet<Activity[]>(`/api/garmin/activities?start=${start}&limit=${PAGE_SIZE}`);
       setActivities((prev) => (start === 0 ? page : [...prev, ...page]));
       if (page.length < PAGE_SIZE) setDone(true);
+      else setDone(false);
+      setSyncedAt(new Date());
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load activities");
     } finally {
@@ -35,7 +39,12 @@ export default function ActivitiesPage() {
 
   return (
     <main className="shell">
-      <TopBar title="Activities" />
+      <TopBar
+        title="Activities"
+        onSync={() => void loadMore(0)}
+        syncing={loading}
+        syncedAt={syncedAt}
+      />
       <DemoBanner />
 
       {error ? <div className="notice error">{error}</div> : null}

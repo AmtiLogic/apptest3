@@ -146,10 +146,52 @@ or put your host's own access control in front of it.
 
 | Page | Data |
 |---|---|
-| `/` | Steps, distance, calories, resting HR, Body Battery, active time; 14-day step chart; last night's sleep stages |
+| `/` | Headline projection; stat tiles with week-on-week deltas; 28-day step chart with a 7-day forecast; training volume; last night's sleep |
 | `/activities` | Paged activity history — type, date, distance, time, average HR |
 | `/activities/[id]` | Per-activity detail — pace, moving time, elevation, HR, cadence, power |
 | `/setup` | How to connect real data; shown from the sample-data banner |
+
+## Projections
+
+The dashboard forecasts where your steps are heading, and summarises training
+volume. Both are deliberately conservative — the point is to be right, not to
+look clever.
+
+**Steps.** A linear trend plus an additive day-of-week effect. Step counts swing
+hugely by weekday, and a plain straight line through the raw numbers reads that
+weekly rhythm as noise and forecasts badly. The two parts are fitted by
+backfitting to convergence: a single pass leaves the trend and the weekday term
+correlated, because each weekday sits at a different average position in the
+window, and the slope comes out wrong.
+
+The forecast is drawn as a dashed line with a shaded interval (±1.96 residual
+standard deviations — a normal approximation, indicative rather than exact at
+this sample size).
+
+Guard rails, because a confident wrong number is worse than no number:
+
+- Fewer than 7 usable days → no forecast, and the UI says why.
+- Fewer than 14 days → trend only; the weekday term needs two cycles to exist.
+- Zero-step days are treated as *unworn watch*, not as a genuinely motionless
+  day, and excluded — they otherwise crater the trend. Gaps stay gaps, because
+  the model indexes on real dates rather than array position.
+- When the fit is weak (R² < 0.15) or the weekly move is under 3%, the wording
+  says "holding steady" instead of naming a direction the data cannot support.
+- Counts are never projected below zero.
+
+**Training volume.** This week's activity minutes against the average week of
+the last four, reported as building / steady / winding down. A rough guide to
+whether volume is climbing or falling — not a medical or injury-risk
+assessment, and not presented as one. Direction arrows stay deliberately
+neutral in colour: "ramping up fast" is a caution, and a green arrow would say
+the opposite.
+
+## Syncing
+
+The **Sync** control in the header refetches everything and shows when it last
+succeeded. It is disabled mid-flight and guarded against repeat taps, so
+hammering it cannot stack concurrent requests. A failed sync leaves the previous
+data on screen with an error strip above it, rather than blanking the page.
 
 ## Architecture
 
@@ -163,7 +205,10 @@ src/lib/garmin/
   mock.ts       fixture data for GARMIN_MOCK=1 and the Pages bundle
 src/lib/session.ts       encrypted, stateless session cookie (+ crypto-cookie.ts)
 src/app/api/         auth and data routes (the browser never talks to Garmin)
-src/components/      stat tiles and the two charts
+src/lib/forecast.ts      trend + weekday model, fitted by backfitting
+src/lib/trainingLoad.ts  acute vs chronic training volume
+src/lib/insights.ts      turns model output into plain sentences
+src/components/      stat tiles, charts, sync control
 scripts/build-static.mjs  strips the server-only routes and exports for Pages
 ```
 

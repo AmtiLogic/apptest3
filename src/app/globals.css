@@ -222,6 +222,8 @@ button,
   cursor: pointer;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
+  /* Wrap as whole buttons, never mid-label ("Sign / out"). */
+  white-space: nowrap;
 }
 
 button:hover,
@@ -495,4 +497,159 @@ input:focus {
 
 .prose .card:last-child {
   margin-bottom: 0;
+}
+
+/* --- Sync control ------------------------------------------------------- */
+
+.sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+.sync:disabled {
+  opacity: 0.75;
+  cursor: default;
+}
+
+.sync svg {
+  flex: none;
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation-duration: 2.4s;
+  }
+}
+
+/* --- Headline insight --------------------------------------------------- */
+
+.insight {
+  margin-bottom: 16px;
+}
+
+.insight-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.insight-head {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+/* The arrow, not the text, carries the series colour. */
+.insight-head svg {
+  flex: none;
+  align-self: center;
+  color: var(--text-muted);
+}
+
+/* Neutral by design: an upward arrow means "rising", not "good". Training
+   volume ramping up fast is a caution, and colouring it green would say the
+   opposite. The wording carries the judgement. */
+.tone-up .insight-head svg,
+.tone-down .insight-head svg {
+  color: var(--text-secondary);
+}
+
+.insight-head h2 {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.insight-detail {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* --- Tile deltas -------------------------------------------------------- */
+
+.delta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  margin-top: 4px;
+  color: var(--text-secondary);
+}
+
+.delta.up {
+  color: var(--status-good);
+}
+
+.delta.down {
+  color: var(--text-muted);
+}
+
+/* --- Loading skeletons -------------------------------------------------- */
+
+.skeleton {
+  background: linear-gradient(90deg, var(--gridline) 25%, var(--plane) 50%, var(--gridline) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+.skeleton.line {
+  height: 12px;
+  margin-bottom: 10px;
+}
+
+.skeleton.line.short {
+  width: 45%;
+}
+
+.skeleton.line.tall {
+  height: 24px;
+  width: 70%;
+  margin-bottom: 0;
+}
+
+.skeleton.block {
+  height: 220px;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* --- Forecast chart legend --------------------------------------------- */
+
+.swatch.band {
+  background: var(--series-1);
+  opacity: 0.25;
+  border-radius: 2px;
+}
+
+.legend-item svg {
+  flex: none;
 }

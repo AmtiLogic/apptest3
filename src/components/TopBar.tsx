@@ -2,9 +2,22 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { SyncButton } from "@/components/SyncButton";
 import { IS_STATIC_DEMO } from "@/lib/staticDemo";
 
-export function TopBar({ title, who }: { title: string; who?: string | null }) {
+export function TopBar({
+  title,
+  who,
+  onSync,
+  syncing = false,
+  syncedAt = null,
+}: {
+  title: string;
+  who?: string | null;
+  onSync?: () => void;
+  syncing?: boolean;
+  syncedAt?: Date | null;
+}) {
   const router = useRouter();
 
   async function signOut() {
@@ -26,6 +39,7 @@ export function TopBar({ title, who }: { title: string; who?: string | null }) {
         <Link className="button" href="/activities">
           Activities
         </Link>
+        {onSync ? <SyncButton syncing={syncing} syncedAt={syncedAt} onSync={onSync} /> : null}
         {IS_STATIC_DEMO ? null : (
           <button type="button" onClick={signOut}>
             Sign out

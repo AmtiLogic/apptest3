@@ -8,7 +8,7 @@ import type { GarminTokens } from "./types";
 export const MOCK_ENABLED = process.env.GARMIN_MOCK === "1";
 
 /** The sample activities, so a static export knows which pages to render. */
-export const DEMO_ACTIVITY_IDS = Array.from({ length: 12 }, (_, i) => String(1000 + i));
+export const DEMO_ACTIVITY_IDS = Array.from({ length: 20 }, (_, i) => String(1000 + i));
 
 export const MOCK_TOKENS: GarminTokens = {
   oauth1: { oauthToken: "mock", oauthTokenSecret: "mock", domain: "garmin.com" },
@@ -43,11 +43,18 @@ export function mockResponse(path: string): unknown {
   }
 
   if (path.startsWith("/usersummary-service/stats/steps/daily/")) {
-    return Array.from({ length: 14 }, (_, i) => ({
-      calendarDate: isoDate(i - 13),
-      totalSteps: Math.round(4200 + Math.abs(seeded(i + 1)) * 9000),
-      stepGoal: 9000,
-    }));
+    // Four weeks with a mild upward trend and a weekend dip, so the forecast has
+    // a real weekly pattern to find rather than pure noise.
+    return Array.from({ length: 28 }, (_, i) => {
+      const date = isoDate(i - 27);
+      const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+      const weekendDip = weekday === 0 || weekday === 6 ? -2600 : 400;
+      return {
+        calendarDate: date,
+        totalSteps: Math.round(7200 + i * 55 + weekendDip + Math.abs(seeded(i + 1)) * 2600),
+        stepGoal: 9000,
+      };
+    });
   }
 
   if (path.startsWith("/usersummary-service/usersummary/daily/")) {
@@ -87,10 +94,10 @@ export function mockResponse(path: string): unknown {
 
   if (path.startsWith("/activitylist-service/activities/search/activities")) {
     const types = ["running", "cycling", "lap_swimming", "strength_training", "hiking"];
-    return Array.from({ length: 12 }, (_, i) => ({
+    return Array.from({ length: 20 }, (_, i) => ({
       activityId: 1000 + i,
       activityName: ["Morning Run", "Commute", "Pool Session", "Gym", "Trail Loop"][i % 5],
-      startTimeLocal: `${isoDate(-i)} 07:${String(10 + i).padStart(2, "0")}:00`,
+      startTimeLocal: `${isoDate(-Math.round(i * 1.4))} 07:${String(10 + (i % 40)).padStart(2, "0")}:00`,
       distance: i % 4 === 3 ? null : 4000 + Math.abs(seeded(i + 5)) * 12000,
       duration: 1800 + Math.abs(seeded(i + 9)) * 4200,
       elapsedDuration: 1900 + Math.abs(seeded(i + 9)) * 4200,
