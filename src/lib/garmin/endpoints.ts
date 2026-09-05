@@ -1,3 +1,4 @@
+import { mergeByDate, splitRange } from "../dateWindows";
 import { connectGet, type ConnectResponse } from "./client";
 import type { GarminTokens } from "./types";
 
@@ -94,6 +95,37 @@ export function getSleep(
     date,
     nonSleepBufferMinutes: 60,
   });
+}
+
+/**
+ * Fetches a step range of any length by splitting it into windows Garmin
+ * accepts and merging the results. One window failing does not lose the rest.
+ */
+export async function getStepsRangeChunked(
+  tokens: GarminTokens,
+  start: string,
+  end: string,
+): Promise<{ data: StepsForDay[]; tokens?: GarminTokens; failures: string[] }> {
+  const windows = splitRange(start, end);
+  const results = await Promise.allSettled(
+    windows.map((window) => getStepsRange(tokens, window.start, window.end)),
+  );
+
+  const chunks: StepsForDay[][] = [];
+  const failures: string[] = [];
+  let refreshed: GarminTokens | undefined;
+
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
+      failures.push(`${windows[i].start}..${windows[i].end}: ${reason}`);
+      return;
+    }
+    if (result.value.tokens) refreshed = result.value.tokens;
+    chunks.push(result.value.data ?? []);
+  });
+
+  return { data: mergeByDate(chunks), tokens: refreshed, failures };
 }
 
 export function getStepsRange(

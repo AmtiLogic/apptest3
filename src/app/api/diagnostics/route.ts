@@ -4,6 +4,7 @@ import { connectGet } from "@/lib/garmin/client";
 import { PATHS } from "@/lib/garmin/endpoints";
 import { GarminError } from "@/lib/garmin/types";
 import type { DiagnosticCheck } from "@/lib/diagnostics";
+import { resolveToday } from "@/lib/dateWindows";
 
 /** A one-line description of what came back, without including any of the data. */
 function describe(value: unknown): string {
@@ -23,16 +24,16 @@ function describe(value: unknown): string {
  * when a section comes back empty this is how to find out which call is at
  * fault and what it actually returned.
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await requireSession();
-    const today = isoDate();
+    const today = resolveToday(new URL(request.url).searchParams.get("date"), isoDate());
 
     const probes: Array<{ name: string; path: string; params?: Record<string, string | number> }> = [
       { name: "Profile", path: PATHS.profile() },
       { name: "Today's summary", path: PATHS.daily(session.displayName), params: { calendarDate: today } },
       { name: "Sleep", path: PATHS.sleep(session.displayName), params: { date: today, nonSleepBufferMinutes: 60 } },
-      { name: "Step history", path: PATHS.steps(isoDate(-27), today) },
+      { name: "Step history", path: PATHS.steps(isoDate(-27, today), today) },
       { name: "Activities", path: PATHS.activities(), params: { start: 0, limit: 3 } },
     ];
 

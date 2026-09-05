@@ -209,6 +209,14 @@ rather than quietly showing you an empty chart.
   Garmin returned. It is never silently turned into empty data.
 - A card whose data failed says so, instead of showing the same "nothing
   recorded" message it would show on a genuinely quiet day.
+- **Dates are the user's, not the server's.** The browser sends its own calendar
+  date and the server uses it. A UTC host serving someone at UTC-7 is on
+  tomorrow's date all evening, and Garmin answers with an empty day — which
+  looks exactly like a broken endpoint. A client date more than one day from the
+  server's is rejected, since no real timezone is further out.
+- **Long ranges are split.** Garmin's step-history endpoint answers HTTP 400
+  beyond about four weeks, so a 90-day request is issued as consecutive 28-day
+  windows and merged. A window that fails does not lose the others.
 - A 200 response in an **unfamiliar shape** is treated as a failure, not a
   success. `src/lib/shapeCheck.ts` reports the keys Garmin actually returned, so
   an endpoint that has changed identifies itself instead of silently rendering a

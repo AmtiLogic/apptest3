@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { handleError, isoDate, persistRefresh, requireSession } from "@/lib/api";
-import { getActivities, getDailySummary, getProfile, getSleep, getStepsRange } from "@/lib/garmin/endpoints";
+import { getActivities, getDailySummary, getProfile, getSleep, getStepsRangeChunked } from "@/lib/garmin/endpoints";
 import type { ConnectResponse } from "@/lib/garmin/client";
 import { checkShape, EXPECTED } from "@/lib/shapeCheck";
+import { resolveToday } from "@/lib/dateWindows";
 
 const HISTORY_DAYS = 90;
 
@@ -20,13 +21,18 @@ const HISTORY_DAYS = 90;
 export async function GET(request: Request) {
   try {
     const session = await requireSession();
-    const days = Math.min(Math.max(Number(new URL(request.url).searchParams.get("days") ?? HISTORY_DAYS), 7), 90);
-    const today = isoDate();
+    const params = new URL(request.url).searchParams;
+    const days = Math.min(Math.max(Number(params.get("days") ?? HISTORY_DAYS), 7), 90);
+
+    // The browser's calendar date, not the server's: a UTC server is a day ahead
+    // of a user in the Americas all evening, and Garmin answers with an empty day.
+    const today = resolveToday(params.get("date"), isoDate());
+    const rangeStart = isoDate(-(days - 1), today);
 
     const [daily, sleep, steps, activities] = await Promise.allSettled([
       getDailySummary(session.tokens, session.displayName, today),
       getSleep(session.tokens, session.displayName, today),
-      getStepsRange(session.tokens, isoDate(-(days - 1)), today),
+      getStepsRangeChunked(session.tokens, rangeStart, today),
       getActivities(session.tokens, 0, 60),
     ]);
 
@@ -52,7 +58,16 @@ export async function GET(request: Request) {
 
     const dailyData = take(daily, "daily", "Today's summary", null);
     const sleepData = take(sleep, "sleep", "Sleep", null);
+    // Chunked: partial windows still yield data, and any that failed are named.
+    const stepsResult = steps.status === "fulfilled" ? steps.value : null;
     const stepsData = take(steps, "steps", "Step history", []);
+    if (stepsResult && stepsResult.failures.length > 0) {
+      issues.push({
+        source: "steps",
+        label: "Step history",
+        message: `${stepsResult.failures.length} of ${stepsResult.failures.length + 1} history windows failed: ${stepsResult.failures[0]}`,
+      });
+    }
     const activitiesData = take(activities, "activities", "Activities", []);
 
     // A 200 with an unfamiliar shape is not a success. Without this the tiles

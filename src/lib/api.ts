@@ -46,9 +46,18 @@ export async function handleError(error: unknown): Promise<NextResponse> {
   return NextResponse.json({ error: message, code: "upstream" }, { status: 500 });
 }
 
-/** YYYY-MM-DD for a date offset from today, in the server's local timezone. */
-export function isoDate(offsetDays = 0): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/**
+ * YYYY-MM-DD offset from `from` (default: the server's today).
+ *
+ * Pass the user's own date when one is known -- the server's timezone is not
+ * theirs.
+ */
+export function isoDate(offsetDays = 0, from?: string): string {
+  const base = from ? new Date(`${from}T00:00:00Z`) : new Date();
+  if (from) {
+    base.setUTCDate(base.getUTCDate() + offsetDays);
+    return base.toISOString().slice(0, 10);
+  }
+  base.setDate(base.getDate() + offsetDays);
+  return `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, "0")}-${String(base.getDate()).padStart(2, "0")}`;
 }

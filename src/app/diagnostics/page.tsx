@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { TopBar } from "@/components/TopBar";
+import { localDate } from "@/lib/dateWindows";
 import { apiGet } from "@/lib/fetcher";
 import type { DiagnosticReport } from "@/lib/diagnostics";
 import { IS_STATIC_DEMO } from "@/lib/staticDemo";
@@ -38,7 +39,7 @@ export default function DiagnosticsPage() {
     setRunning(true);
     setError(null);
     try {
-      setReport(await apiGet<DiagnosticReport>("/api/diagnostics"));
+      setReport(await apiGet<DiagnosticReport>(`/api/diagnostics?date=${localDate()}`));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not run diagnostics");
     } finally {

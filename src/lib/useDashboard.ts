@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { localDate } from "./dateWindows";
 import { apiGet } from "./fetcher";
 import type { Activity, DailySummary, SleepSummary, SocialProfile, StepsForDay } from "./garmin/endpoints";
 
@@ -58,7 +59,7 @@ export function useDashboard(): DashboardState {
       // One request: the server resolves the session once and fetches every
       // section, reporting per-section failures rather than hiding them.
       const summary = await apiGet<DashboardData & { issues: SourceIssue[] }>(
-        `/api/garmin/summary?days=${HISTORY_DAYS}`,
+        `/api/garmin/summary?days=${HISTORY_DAYS}&date=${localDate()}`,
       );
 
       const { issues: found = [], ...rest } = summary;
