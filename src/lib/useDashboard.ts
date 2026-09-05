@@ -5,7 +5,8 @@ import { apiGet } from "./fetcher";
 import type { Activity, DailySummary, SleepSummary, SocialProfile, StepsForDay } from "./garmin/endpoints";
 
 /** Enough history for the weekday term in the forecast, and four weeks of load. */
-export const HISTORY_DAYS = 28;
+/** Fetched once; the range tabs slice this for display. */
+export const HISTORY_DAYS = 90;
 
 export type SourceKey = "profile" | "daily" | "sleep" | "steps" | "activities";
 

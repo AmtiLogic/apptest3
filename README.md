@@ -146,9 +146,10 @@ or put your host's own access control in front of it.
 
 | Page | Data |
 |---|---|
-| `/` | Headline projection; stat tiles with week-on-week deltas; 28-day step chart with a 7-day forecast; training volume; last night's sleep |
+| `/` | Hero step count with week-on-week delta; scrubbable chart with a 7-day forecast and 1W/1M/3M ranges; today's metrics; projection; training volume; sleep |
 | `/activities` | Paged activity history — type, date, distance, time, average HR |
 | `/activities/[id]` | Per-activity detail — pace, moving time, elevation, HR, cadence, power |
+| `/more` | Sign out, and links to diagnostics and setup |
 | `/setup` | How to connect real data; shown from the sample-data banner |
 | `/diagnostics` | Per-endpoint probe: path, status, timing, response shape |
 
@@ -208,9 +209,17 @@ rather than quietly showing you an empty chart.
   Garmin returned. It is never silently turned into empty data.
 - A card whose data failed says so, instead of showing the same "nothing
   recorded" message it would show on a genuinely quiet day.
-- **`/diagnostics`** probes every endpoint one at a time and reports the path,
-  HTTP status, timing, and the shape of what came back. It has a *Copy report*
-  button — that report is the fastest way to get a broken endpoint fixed.
+- A 200 response in an **unfamiliar shape** is treated as a failure, not a
+  success. `src/lib/shapeCheck.ts` reports the keys Garmin actually returned, so
+  an endpoint that has changed identifies itself instead of silently rendering a
+  screen of dashes.
+- Where two endpoints carry the same fact, the working one covers for the broken
+  one: today's step count falls back to the step history when the daily summary
+  is unusable, and the UI says the number came from there.
+- **`/diagnostics`** (under *More*) probes every endpoint one at a time and
+  reports the path, HTTP status, timing, and the shape of what came back. It has
+  a *Copy report* button — that report is the fastest way to get a broken
+  endpoint fixed.
 
 ## Architecture
 

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { envOr } from "@/lib/env";
+import { TabBar } from "@/components/TabBar";
 import "./globals.css";
 
 /**
@@ -39,7 +40,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <TabBar />
+      </body>
     </html>
   );
 }

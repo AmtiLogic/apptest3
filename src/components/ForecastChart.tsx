@@ -9,7 +9,7 @@ export interface HistoryPoint {
   value: number;
 }
 
-const HEIGHT = 240;
+const DEFAULT_HEIGHT = 240;
 const PAD = { top: 22, right: 12, bottom: 26, left: 42 };
 
 function niceTicks(max: number): number[] {
@@ -31,19 +31,35 @@ function shortDate(date: string): string {
  * a wash behind it. Same hue throughout -- it is one measure over time, not two
  * different things.
  */
+export interface ScrubPoint {
+  date: string;
+  value: number;
+  isForecast: boolean;
+  lower: number;
+  upper: number;
+}
+
 export function ForecastChart({
   history,
   forecast,
   goal,
   unitLabel,
+  /** Drops gridlines and axis labels; the scrub readout carries the values. */
+  minimal = false,
+  height,
+  onScrub,
 }: {
   history: HistoryPoint[];
   forecast: Prediction[];
   goal?: number | null;
   unitLabel: string;
+  minimal?: boolean;
+  height?: number;
+  onScrub?: (point: ScrubPoint | null) => void;
 }) {
   const [active, setActive] = useState<number | null>(null);
   const { ref, width } = useElementWidth<HTMLDivElement>();
+  const HEIGHT = height ?? DEFAULT_HEIGHT;
 
   if (history.length === 0) return <p className="empty">No history yet.</p>;
 
@@ -56,11 +72,12 @@ export function ForecastChart({
   const ceiling = peak * 1.1;
   const ticks = niceTicks(peak);
 
-  const plotW = Math.max(width - PAD.left - PAD.right, 120);
-  const plotH = HEIGHT - PAD.top - PAD.bottom;
+  const pad = minimal ? { top: 14, right: 2, bottom: 18, left: 2 } : PAD;
+  const plotW = Math.max(width - pad.left - pad.right, 120);
+  const plotH = HEIGHT - pad.top - pad.bottom;
   const step = all.length > 1 ? plotW / (all.length - 1) : 0;
-  const xOf = (i: number) => PAD.left + step * i;
-  const yOf = (v: number) => PAD.top + plotH - (v / ceiling) * plotH;
+  const xOf = (i: number) => pad.left + step * i;
+  const yOf = (v: number) => pad.top + plotH - (v / ceiling) * plotH;
 
   const line = (points: Array<{ value: number }>, offset: number) =>
     points.map((p, i) => `${i === 0 ? "M" : "L"}${xOf(i + offset)},${yOf(p.value)}`).join(" ");
@@ -84,6 +101,11 @@ export function ForecastChart({
 
   const last = forecast[forecast.length - 1];
   const shown = active === null ? null : all[active];
+
+  const scrubTo = (index: number | null) => {
+    setActive(index);
+    onScrub?.(index === null ? null : (all[index] as ScrubPoint));
+  };
   const labelStride = step >= 42 ? Math.ceil(all.length / 7) : Math.ceil(all.length / 4);
 
   return (
@@ -95,12 +117,12 @@ export function ForecastChart({
         style={{ display: "block", touchAction: "pan-y" }}
         role="img"
         aria-label={`${unitLabel} history and ${forecast.length}-day projection`}
-        onPointerLeave={() => setActive(null)}
+        onPointerLeave={() => scrubTo(null)}
       >
-        {ticks.map((t) => (
+        {minimal ? null : ticks.map((t) => (
           <g key={t}>
-            <line x1={PAD.left} x2={width - PAD.right} y1={yOf(t)} y2={yOf(t)} stroke="var(--gridline)" strokeWidth={1} />
-            <text x={PAD.left - 6} y={yOf(t) + 4} textAnchor="end" fontSize={10} fill="var(--text-muted)">
+            <line x1={pad.left} x2={width - pad.right} y1={yOf(t)} y2={yOf(t)} stroke="var(--gridline)" strokeWidth={1} />
+            <text x={pad.left - 6} y={yOf(t) + 4} textAnchor="end" fontSize={10} fill="var(--text-muted)">
               {t >= 1000 ? `${t / 1000}k` : t}
             </text>
           </g>
@@ -108,8 +130,8 @@ export function ForecastChart({
 
         {goal ? (
           <>
-            <line x1={PAD.left} x2={width - PAD.right} y1={yOf(goal)} y2={yOf(goal)} stroke="var(--baseline)" strokeWidth={1} />
-            <text x={PAD.left + 4} y={yOf(goal) - 5} textAnchor="start" fontSize={10} fill="var(--text-muted)">
+            <line x1={pad.left} x2={width - pad.right} y1={yOf(goal)} y2={yOf(goal)} stroke="var(--baseline)" strokeWidth={1} />
+            <text x={pad.left + 4} y={yOf(goal) - 5} textAnchor="start" fontSize={10} fill="var(--text-muted)">
               goal
             </text>
           </>
@@ -137,7 +159,7 @@ export function ForecastChart({
 
         {last && active === null ? (
           <text
-            x={Math.min(xOf(all.length - 1), width - PAD.right - 4)}
+            x={Math.min(xOf(all.length - 1), width - pad.right - 4)}
             y={yOf(last.value) - 10}
             textAnchor="end"
             fontSize={11}
@@ -150,12 +172,12 @@ export function ForecastChart({
 
         {shown ? (
           <>
-            <line x1={xOf(active!)} x2={xOf(active!)} y1={PAD.top} y2={PAD.top + plotH} stroke="var(--baseline)" strokeWidth={1} />
+            <line x1={xOf(active!)} x2={xOf(active!)} y1={pad.top} y2={pad.top + plotH} stroke="var(--baseline)" strokeWidth={1} />
             <circle cx={xOf(active!)} cy={yOf(shown.value)} r={4.5} fill="var(--series-1)" stroke="var(--surface-1)" strokeWidth={2} />
           </>
         ) : null}
 
-        <line x1={PAD.left} x2={width - PAD.right} y1={PAD.top + plotH} y2={PAD.top + plotH} stroke="var(--baseline)" strokeWidth={1} />
+        <line x1={pad.left} x2={width - pad.right} y1={pad.top + plotH} y2={pad.top + plotH} stroke="var(--baseline)" strokeWidth={1} />
 
         {all.map((p, i) => {
           const isLast = i === all.length - 1;
@@ -181,16 +203,17 @@ export function ForecastChart({
           <rect
             key={`hit-${p.date}`}
             x={xOf(i) - step / 2}
-            y={PAD.top}
+            y={pad.top}
             width={Math.max(step, 8)}
             height={plotH}
             fill="transparent"
-            onPointerEnter={() => setActive(i)}
-            onPointerDown={() => setActive(i)}
+            onPointerEnter={() => scrubTo(i)}
+            onPointerDown={() => scrubTo(i)}
           />
         ))}
       </svg>
 
+      {minimal ? null : (
       <div className="legend">
         <span className="legend-item">
           <svg width="16" height="8" aria-hidden>
@@ -209,7 +232,9 @@ export function ForecastChart({
           Likely range
         </span>
       </div>
+      )}
 
+      {minimal ? null : (
       <figcaption className="chart-readout">
         {shown ? (
           <>
@@ -225,6 +250,7 @@ export function ForecastChart({
           "Tap or hover any point for its value."
         )}
       </figcaption>
+      )}
     </figure>
   );
 }

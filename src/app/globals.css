@@ -105,6 +105,8 @@ a {
   display: flex;
   gap: 8px;
   align-items: center;
+  /* Buttons never break mid-label, so the row itself has to wrap. */
+  flex-wrap: wrap;
   flex: 1 1 100%;
 }
 
@@ -762,4 +764,191 @@ input:focus {
 
 .empty.failed {
   color: var(--status-critical);
+}
+
+/* --- Hero metric -------------------------------------------------------- */
+
+.hero {
+  padding: 6px 2px 2px;
+}
+
+.hero-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+}
+
+.hero-value {
+  font-size: 44px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  margin-top: 2px;
+  /* Scrubbing swaps this figure constantly; tabular digits stop it jittering. */
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-unit {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-left: 5px;
+}
+
+.hero-caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-height: 20px;
+}
+
+.hero-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-delta.up {
+  color: var(--status-good);
+}
+
+.hero-delta.down {
+  color: var(--text-muted);
+}
+
+/* --- Range tabs --------------------------------------------------------- */
+
+.ranges {
+  display: flex;
+  gap: 4px;
+  margin: 2px 0 20px;
+}
+
+.range {
+  min-height: 34px;
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 7px;
+}
+
+.range.active {
+  color: var(--series-1);
+  background: color-mix(in srgb, var(--series-1) 12%, transparent);
+}
+
+/* --- Metric rows -------------------------------------------------------- */
+
+.metrics {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--gridline);
+}
+
+.metric:last-child {
+  border-bottom: none;
+}
+
+.metric-label {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.metric-value {
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.metric-value.missing {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.metric-sub {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* --- Bottom tab bar ----------------------------------------------------- */
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  background: color-mix(in srgb, var(--surface-1) 92%, transparent);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 9px 4px 7px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab.active {
+  color: var(--series-1);
+}
+
+/* Clear the fixed bar so the last card is never trapped under it. */
+.shell {
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 700px) {
+  .shell {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+
+  .tabbar {
+    justify-content: center;
+    gap: 40px;
+  }
+
+  .tab {
+    flex: 0 0 auto;
+    min-width: 96px;
+  }
+}
+
+.metric.link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.metric.link .metric-value {
+  color: var(--series-1);
+  font-weight: 500;
 }

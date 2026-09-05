@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { handleError, isoDate, persistRefresh, requireSession } from "@/lib/api";
 import { getActivities, getDailySummary, getProfile, getSleep, getStepsRange } from "@/lib/garmin/endpoints";
 import type { ConnectResponse } from "@/lib/garmin/client";
+import { checkShape, EXPECTED } from "@/lib/shapeCheck";
 
-const HISTORY_DAYS = 28;
+const HISTORY_DAYS = 90;
 
 /**
  * Everything the dashboard needs, in one request.
@@ -49,12 +50,28 @@ export async function GET(request: Request) {
     const { data: profile, tokens } = await getProfile(session.tokens);
     persistRefresh(tokens);
 
+    const dailyData = take(daily, "daily", "Today's summary", null);
+    const sleepData = take(sleep, "sleep", "Sleep", null);
+    const stepsData = take(steps, "steps", "Step history", []);
+    const activitiesData = take(activities, "activities", "Activities", []);
+
+    // A 200 with an unfamiliar shape is not a success. Without this the tiles
+    // just render dashes and nothing says why.
+    if (daily.status === "fulfilled") {
+      const verdict = checkShape(dailyData, EXPECTED.daily);
+      if (!verdict.ok) issues.push({ source: "daily", label: "Today's summary", message: verdict.message! });
+    }
+    if (sleep.status === "fulfilled") {
+      const verdict = checkShape(sleepData, EXPECTED.sleep);
+      if (!verdict.ok) issues.push({ source: "sleep", label: "Sleep", message: verdict.message! });
+    }
+
     return NextResponse.json({
       profile,
-      daily: take(daily, "daily", "Today's summary", null),
-      sleep: take(sleep, "sleep", "Sleep", null),
-      steps: take(steps, "steps", "Step history", []),
-      activities: take(activities, "activities", "Activities", []),
+      daily: dailyData,
+      sleep: sleepData,
+      steps: stepsData,
+      activities: activitiesData,
       issues,
     });
   } catch (error) {
