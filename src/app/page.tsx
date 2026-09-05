@@ -10,7 +10,12 @@ import { RANGES, RangeTabs, type RangeKey } from "@/components/RangeTabs";
 import { SleepChart, type SleepStage } from "@/components/SleepChart";
 import { SyncIssues } from "@/components/SyncIssues";
 import { TopBar } from "@/components/TopBar";
+import { Findings } from "@/components/Findings";
+import { MomentumCard } from "@/components/MomentumCard";
 import { forecastDaily, goalOutlook, type DailyPoint } from "@/lib/forecast";
+import { momentum } from "@/lib/momentum";
+import { buildDailyFeatures, findRelationships } from "@/lib/relationships";
+import { percentileOf, typicalRange } from "@/lib/stats";
 import { formatHoursMinutes } from "@/lib/format";
 import { compareToRecent, loadInsight, stepsInsight } from "@/lib/insights";
 import { activeMinutes, distanceKm, stepGoal, todaySteps } from "@/lib/todayMetrics";
@@ -49,6 +54,7 @@ export default function DashboardPage() {
     const history = series.filter((p): p is { date: string; value: number } => p.value !== null && p.value > 0);
     const recent = series.slice(-8, -1).map((p) => p.value).filter((v): v is number => v !== null && v > 0);
     const steps = todaySteps(data.daily, data.steps);
+    const values = history.map((p) => p.value);
 
     return {
       goal,
@@ -58,6 +64,11 @@ export default function DashboardPage() {
       stepsDelta: compareToRecent(steps.value, recent),
       insight: stepsInsight(forecast, outlook, goal),
       load: loadInsight(trainingLoad(data.activities, today)),
+      // Judging a value against your own distribution beats reading an axis.
+      normalBand: typicalRange(values),
+      percentile: steps.value === null ? null : percentileOf(steps.value, values),
+      momentum: momentum(data.steps.map((d) => ({ date: d.calendarDate, value: d.totalSteps, goal }))),
+      relationships: findRelationships(buildDailyFeatures(data.steps, data.activities)),
     };
   }, [data]);
 
@@ -148,6 +159,11 @@ export default function DashboardPage() {
         caption={heroCaption}
         delta={analysis.stepsDelta}
         scrubbed={scrub !== null}
+        percentile={
+          scrub
+            ? percentileOf(scrub.value, analysis.history.map((p) => p.value))
+            : analysis.percentile
+        }
       />
 
       {failed.has("steps") ? (
@@ -162,12 +178,17 @@ export default function DashboardPage() {
             minimal
             height={190}
             onScrub={setScrub}
+            normalBand={analysis.normalBand}
           />
           <RangeTabs value={range} onChange={setRange} />
         </>
       )}
 
       <InsightCard insight={analysis.insight} label={`Projection · next ${HORIZON_DAYS} days`} />
+
+      <Findings report={analysis.relationships} />
+
+      <MomentumCard momentum={analysis.momentum} />
 
       <section className="card">
         <h2>Today</h2>

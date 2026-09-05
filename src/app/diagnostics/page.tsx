@@ -16,7 +16,7 @@ function asText(report: DiagnosticReport): string {
     "",
     ...report.checks.map((c) =>
       [
-        `${c.ok ? "OK  " : "FAIL"} ${c.name} (${c.ms}ms)`,
+        `${c.ok ? "OK  " : c.optional ? "N/A " : "FAIL"} ${c.name} (${c.ms}ms)`,
         `     ${c.path}`,
         c.upstreamStatus ? `     HTTP ${c.upstreamStatus}` : "",
         c.error ? `     ${c.error}` : "",
@@ -88,7 +88,9 @@ export default function DiagnosticsPage() {
           <div className="rows card" style={{ marginTop: 16 }}>
             {report.checks.map((check) => (
               <div className="check" key={check.path}>
-                <span className={`pill ${check.ok ? "ok" : "bad"}`}>{check.ok ? "OK" : "FAIL"}</span>
+                <span className={`pill ${check.ok ? "ok" : check.optional ? "" : "bad"}`}>
+                  {check.ok ? "OK" : check.optional ? "N/A" : "FAIL"}
+                </span>
                 <div className="check-body">
                   <div className="check-name">
                     {check.name} <span className="muted">· {check.ms} ms</span>

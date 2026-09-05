@@ -188,6 +188,42 @@ assessment, and not presented as one. Direction arrows stay deliberately
 neutral in colour: "ramping up fast" is a caution, and a green arrow would say
 the opposite.
 
+## Personal insights
+
+Most health apps report metrics side by side and leave you to guess at the
+relationships. These features exist because that guessing is the interesting
+part, and it is the part software can actually do for you.
+
+**What moves your numbers.** Tests whether your own history contains real
+relationships — does sleeping more precede a more active day *for you*? Each
+candidate is a median split on the predictor with a permutation test on the
+difference in outcome means, reported in the outcome's own units ("2,400 more
+steps") rather than a correlation coefficient nobody can interpret.
+
+The whole set is corrected for multiple comparisons (Benjamini-Hochberg, FDR
+0.1). Testing a dozen relationships and reporting whatever clears p < 0.05 will
+surface roughly one pure coincidence every time — that is the difference between
+a finding and a horoscope. The permutation test is calibrated: across 600
+synthetic noise datasets it produces false positives at 4.5% against a nominal
+5%. Findings that are statistically real but under a 4% relative effect are
+dropped as too small to act on, and "nothing stands out yet" is presented as a
+real answer rather than a failure.
+
+**Numbers you can read without decoding an axis.** A chart makes reading a value
+a lookup task. Instead:
+
+- your own middle-50% band is drawn behind the line, so any point reads as high
+  or low *for you* at a glance, with no axis involved
+- the highest and lowest days carry their values directly on the chart
+- the hero figure says what it means — "higher than 72% of your days" rather
+  than leaving 9,431 to speak for itself
+- scrubbing the chart replaces the hero figure with that day's value
+
+**Momentum, not streaks.** A recency-weighted share of days that met your goal
+(10-day half-life). A streak resets to zero on one missed day, which is both a
+poor description of someone's fitness and a mean thing to show them. Here a
+missed day dents the number and a good week repairs it.
+
 ## Syncing
 
 The **Sync** control in the header refetches everything and shows when it last

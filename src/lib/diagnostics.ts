@@ -14,6 +14,8 @@ export interface DiagnosticCheck {
   error?: string;
   /** Shape of a successful response, to spot an endpoint returning the wrong thing. */
   shape?: string;
+  /** A candidate endpoint being probed; failing is informative, not a fault. */
+  optional?: boolean;
 }
 
 export interface DiagnosticReport {

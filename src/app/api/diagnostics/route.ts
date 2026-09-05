@@ -29,12 +29,27 @@ export async function GET(request: Request) {
     const session = await requireSession();
     const today = resolveToday(new URL(request.url).searchParams.get("date"), isoDate());
 
-    const probes: Array<{ name: string; path: string; params?: Record<string, string | number> }> = [
+    // The endpoints the app relies on, followed by candidates for multi-day
+    // sleep and resting-HR history. Those would unlock the personal
+    // relationships ("does sleep predict your step count?"), which currently
+    // have only steps and activities to work with. They are undocumented, so
+    // the only way to learn whether they exist is to ask.
+    const probes: Array<{ name: string; path: string; params?: Record<string, string | number>; optional?: boolean }> = [
       { name: "Profile", path: PATHS.profile() },
       { name: "Today's summary", path: PATHS.daily(session.displayName), params: { calendarDate: today } },
       { name: "Sleep", path: PATHS.sleep(session.displayName), params: { date: today, nonSleepBufferMinutes: 60 } },
       { name: "Step history", path: PATHS.steps(isoDate(-27, today), today) },
       { name: "Activities", path: PATHS.activities(), params: { start: 0, limit: 3 } },
+
+      { name: "Sleep history (candidate)", path: `/wellness-service/stats/sleep/daily/${isoDate(-27, today)}/${today}`, optional: true },
+      { name: "Resting HR history (candidate)", path: `/wellness-service/stats/heartRate/daily/${isoDate(-27, today)}/${today}`, optional: true },
+      { name: "Daily stats history (candidate)", path: `/usersummary-service/stats/daily/${isoDate(-27, today)}/${today}`, optional: true },
+      {
+        name: "Wellness metrics (candidate)",
+        path: `/userstats-service/wellness/daily/${encodeURIComponent(session.displayName)}`,
+        params: { fromDate: isoDate(-27, today), untilDate: today, metricId: 60 },
+        optional: true,
+      },
     ];
 
     const checks: DiagnosticCheck[] = [];
@@ -42,18 +57,24 @@ export async function GET(request: Request) {
       const started = Date.now();
       try {
         const { data } = await connectGet<unknown>(session.tokens, probe.path, probe.params);
+        // A 200 carrying nothing is not a working endpoint. Reporting it as OK
+        // is how a probe ends up lying about what is available.
+        const empty = data === null || data === undefined || (Array.isArray(data) && data.length === 0);
         checks.push({
           name: probe.name,
           path: probe.path,
-          ok: true,
+          ok: !empty,
+          optional: probe.optional,
           ms: Date.now() - started,
           shape: describe(data),
+          error: empty ? "Responded, but with no data." : undefined,
         });
       } catch (error) {
         checks.push({
           name: probe.name,
           path: probe.path,
           ok: false,
+          optional: probe.optional,
           ms: Date.now() - started,
           upstreamStatus: error instanceof GarminError ? error.upstreamStatus : undefined,
           error: error instanceof Error ? error.message : String(error),

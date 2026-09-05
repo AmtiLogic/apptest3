@@ -952,3 +952,73 @@ input:focus {
   color: var(--series-1);
   font-weight: 500;
 }
+
+.hero-context {
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* --- Findings ----------------------------------------------------------- */
+
+.finding {
+  padding: 13px 0;
+  border-bottom: 1px solid var(--gridline);
+}
+
+.finding:last-child {
+  border-bottom: none;
+}
+
+.finding-headline {
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.finding-detail {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.finding-meta {
+  margin-top: 5px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Momentum ----------------------------------------------------------- */
+
+.momentum {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.momentum-score {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.momentum-label {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.momentum-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--gridline);
+  margin-top: 11px;
+  overflow: hidden;
+}
+
+.momentum-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--series-1);
+}

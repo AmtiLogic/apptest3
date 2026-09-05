@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Prediction } from "@/lib/forecast";
+import type { TypicalRange } from "@/lib/stats";
 import { useElementWidth } from "@/lib/useElementWidth";
 
 export interface HistoryPoint {
@@ -48,6 +49,8 @@ export function ForecastChart({
   minimal = false,
   height,
   onScrub,
+  /** The middle half of the user's own history, drawn as a reference band. */
+  normalBand,
 }: {
   history: HistoryPoint[];
   forecast: Prediction[];
@@ -56,6 +59,7 @@ export function ForecastChart({
   minimal?: boolean;
   height?: number;
   onScrub?: (point: ScrubPoint | null) => void;
+  normalBand?: TypicalRange | null;
 }) {
   const [active, setActive] = useState<number | null>(null);
   const { ref, width } = useElementWidth<HTMLDivElement>();
@@ -68,7 +72,7 @@ export function ForecastChart({
     ...forecast.map((p) => ({ date: p.date, value: p.value, isForecast: true, lower: p.lower, upper: p.upper })),
   ];
 
-  const peak = Math.max(...all.map((p) => p.upper), goal ?? 0, 1);
+  const peak = Math.max(...all.map((p) => p.upper), goal ?? 0, normalBand?.high ?? 0, 1);
   const ceiling = peak * 1.1;
   const ticks = niceTicks(peak);
 
@@ -100,6 +104,25 @@ export function ForecastChart({
       : "";
 
   const last = forecast[forecast.length - 1];
+
+  // Highest and lowest recorded days, skipped when they sit under the endpoint
+  // label or under each other.
+  const extremes = (() => {
+    if (history.length < 5) return [];
+    let maxIndex = 0;
+    let minIndex = 0;
+    history.forEach((point, i) => {
+      if (point.value > history[maxIndex].value) maxIndex = i;
+      if (point.value < history[minIndex].value) minIndex = i;
+    });
+    const candidates = [
+      { index: maxIndex, value: history[maxIndex].value, isMax: true },
+      { index: minIndex, value: history[minIndex].value, isMax: false },
+    ];
+    return candidates.filter(
+      (c) => Math.abs(c.index - (all.length - 1)) > 2 && Math.abs(maxIndex - minIndex) > 2,
+    );
+  })();
   const shown = active === null ? null : all[active];
 
   const scrubTo = (index: number | null) => {
@@ -137,6 +160,40 @@ export function ForecastChart({
           </>
         ) : null}
 
+        {/* "Normal for you", so a value can be judged without reading an axis. */}
+        {normalBand ? (
+          <>
+            <rect
+              x={pad.left}
+              y={yOf(normalBand.high)}
+              width={plotW}
+              height={Math.max(yOf(normalBand.low) - yOf(normalBand.high), 1)}
+              fill="var(--text-muted)"
+              opacity={0.13}
+              rx={3}
+            />
+            <line
+              x1={pad.left}
+              x2={width - pad.right}
+              y1={yOf(normalBand.median)}
+              y2={yOf(normalBand.median)}
+              stroke="var(--text-muted)"
+              strokeWidth={1}
+              opacity={0.55}
+            />
+            {/* Anchored right, so it cannot stack on the goal label at the left. */}
+            <text
+              x={width - pad.right - 3}
+              y={yOf(normalBand.high) - 4}
+              textAnchor="end"
+              fontSize={9.5}
+              fill="var(--text-muted)"
+            >
+              typical
+            </text>
+          </>
+        ) : null}
+
         {bandPath ? <path d={bandPath} fill="var(--series-1)" opacity={0.12} /> : null}
 
         <path d={line(history, 0)} fill="none" stroke="var(--series-1)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
@@ -156,6 +213,23 @@ export function ForecastChart({
         {last ? (
           <circle cx={xOf(all.length - 1)} cy={yOf(last.value)} r={4.5} fill="var(--series-1)" stroke="var(--surface-1)" strokeWidth={2} />
         ) : null}
+
+        {/* Label the extremes directly rather than making the axis carry them. */}
+        {active === null
+          ? extremes.map((point) => (
+              <text
+                key={`extreme-${point.index}`}
+                x={Math.min(Math.max(xOf(point.index), pad.left + 18), width - pad.right - 18)}
+                y={point.isMax ? yOf(point.value) - 7 : yOf(point.value) + 14}
+                textAnchor="middle"
+                fontSize={10.5}
+                fontWeight={600}
+                fill="var(--text-secondary)"
+              >
+                {Math.round(point.value).toLocaleString()}
+              </text>
+            ))
+          : null}
 
         {last && active === null ? (
           <text
