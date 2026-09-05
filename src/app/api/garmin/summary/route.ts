@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { handleError, isoDate, persistRefresh, requireSession } from "@/lib/api";
-import { getActivities, getDailySummary, getProfile, getSleep, getStepsRangeChunked } from "@/lib/garmin/endpoints";
+import { getActivities, getDailySummary, getProfile, getSleep, getStepsRangeChunked, getWeightRange } from "@/lib/garmin/endpoints";
+import { normaliseWeight } from "@/lib/weight";
 import type { ConnectResponse } from "@/lib/garmin/client";
 import { checkShape, EXPECTED } from "@/lib/shapeCheck";
 import { resolveToday } from "@/lib/dateWindows";
@@ -29,11 +30,12 @@ export async function GET(request: Request) {
     const today = resolveToday(params.get("date"), isoDate());
     const rangeStart = isoDate(-(days - 1), today);
 
-    const [daily, sleep, steps, activities] = await Promise.allSettled([
+    const [daily, sleep, steps, activities, weight] = await Promise.allSettled([
       getDailySummary(session.tokens, session.displayName, today),
       getSleep(session.tokens, session.displayName, today),
       getStepsRangeChunked(session.tokens, rangeStart, today),
       getActivities(session.tokens, 0, 60),
+      getWeightRange(session.tokens, rangeStart, today),
     ]);
 
     const issues: Array<{ source: string; label: string; message: string }> = [];
@@ -81,8 +83,14 @@ export async function GET(request: Request) {
       if (!verdict.ok) issues.push({ source: "sleep", label: "Sleep", message: verdict.message! });
     }
 
+    // Weight needs a connected scale or manual entries, so its absence is
+    // normal rather than a fault: no issue is raised when it fails.
+    const weightEntries = weight.status === "fulfilled" ? normaliseWeight(weight.value.data) : [];
+    if (weight.status === "fulfilled") persistRefresh(weight.value.tokens);
+
     return NextResponse.json({
       profile,
+      weight: weightEntries,
       daily: dailyData,
       sleep: sleepData,
       steps: stepsData,

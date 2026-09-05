@@ -1,4 +1,5 @@
 import { mockResponse } from "./garmin/mock";
+import { normaliseWeight } from "./weight";
 
 /**
  * True in the GitHub Pages bundle, which has no server behind it.
@@ -20,6 +21,7 @@ export function demoResponse(path: string): unknown {
       sleep: mockResponse("/wellness-service/wellness/dailySleepData/demo"),
       steps: mockResponse("/usersummary-service/stats/steps/daily/a/b"),
       activities: mockResponse("/activitylist-service/activities/search/activities"),
+      weight: normaliseWeight(mockResponse("/weight-service/weight/dateRange")),
       issues: [],
     };
   }

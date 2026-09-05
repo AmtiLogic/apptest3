@@ -72,6 +72,8 @@ export const PATHS = {
   steps: (start: string, end: string) => `/usersummary-service/stats/steps/daily/${start}/${end}`,
   activities: () => "/activitylist-service/activities/search/activities",
   activity: (id: string) => `/activity-service/activity/${encodeURIComponent(id)}`,
+  // Undocumented and unverified; the app degrades quietly when it is absent.
+  weight: (start: string, end: string) => `/weight-service/weight/dateRange`,
 } as const;
 
 export function getProfile(tokens: GarminTokens): Promise<ConnectResponse<SocialProfile>> {
@@ -142,6 +144,14 @@ export function getActivities(
   limit = 20,
 ): Promise<ConnectResponse<Activity[]>> {
   return connectGet<Activity[]>(tokens, PATHS.activities(), { start, limit });
+}
+
+export function getWeightRange(
+  tokens: GarminTokens,
+  start: string,
+  end: string,
+): Promise<ConnectResponse<unknown>> {
+  return connectGet<unknown>(tokens, PATHS.weight(start, end), { startDate: start, endDate: end });
 }
 
 export function getActivity(

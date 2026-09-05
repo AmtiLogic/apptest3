@@ -10,9 +10,13 @@ import { RANGES, RangeTabs, type RangeKey } from "@/components/RangeTabs";
 import { SleepChart, type SleepStage } from "@/components/SleepChart";
 import { SyncIssues } from "@/components/SyncIssues";
 import { TopBar } from "@/components/TopBar";
+import { BodyMapCard } from "@/components/BodyMapCard";
 import { Findings } from "@/components/Findings";
+import { MetricList } from "@/components/MetricList";
 import { MomentumCard } from "@/components/MomentumCard";
 import { forecastDaily, goalOutlook, type DailyPoint } from "@/lib/forecast";
+import { bodyCoverage } from "@/lib/bodyMap";
+import { buildSeries, METRIC_ORDER, summariseMetric } from "@/lib/metrics";
 import { momentum } from "@/lib/momentum";
 import { buildDailyFeatures, findRelationships } from "@/lib/relationships";
 import { percentileOf, typicalRange } from "@/lib/stats";
@@ -55,6 +59,7 @@ export default function DashboardPage() {
     const recent = series.slice(-8, -1).map((p) => p.value).filter((v): v is number => v !== null && v > 0);
     const steps = todaySteps(data.daily, data.steps);
     const values = history.map((p) => p.value);
+    const allSeries = buildSeries({ steps: data.steps, activities: data.activities, weight: data.weight });
 
     return {
       goal,
@@ -69,6 +74,11 @@ export default function DashboardPage() {
       percentile: steps.value === null ? null : percentileOf(steps.value, values),
       momentum: momentum(data.steps.map((d) => ({ date: d.calendarDate, value: d.totalSteps, goal }))),
       relationships: findRelationships(buildDailyFeatures(data.steps, data.activities)),
+      // Every metric gets the same trend, band, percentile and projection.
+      summaries: METRIC_ORDER.map((key) =>
+        summariseMetric(key, allSeries[key], key === "steps" ? goal : null),
+      ),
+      coverage: bodyCoverage(data.activities, today),
     };
   }, [data]);
 
@@ -103,7 +113,8 @@ export default function DashboardPage() {
   const summaryMissing = failed.has("daily");
   const dash = (label: string): MetricRow => ({ label, value: "—", missing: true });
 
-  const rows: MetricRow[] = [
+  // Today's snapshot from the daily summary, which has no history of its own.
+  const todayRows: MetricRow[] = [
     km !== null ? { label: "Distance", value: `${km.toFixed(2)} km` } : dash("Distance"),
     daily?.totalKilocalories
       ? {
@@ -191,6 +202,14 @@ export default function DashboardPage() {
       <MomentumCard momentum={analysis.momentum} />
 
       <section className="card">
+        <h2>Tracked over time</h2>
+        <p className="sub">Every one has its own trend, typical range and 7-day projection.</p>
+        <MetricList summaries={analysis.summaries} />
+      </section>
+
+      <BodyMapCard coverage={analysis.coverage} />
+
+      <section className="card">
         <h2>Today</h2>
         {summaryMissing ? (
           <p className="sub">
@@ -198,7 +217,7 @@ export default function DashboardPage() {
             provide is shown.
           </p>
         ) : null}
-        <MetricRows rows={rows} />
+        <MetricRows rows={todayRows} />
       </section>
 
       <div className="two-col">

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { localDate } from "./dateWindows";
 import { apiGet } from "./fetcher";
 import type { Activity, DailySummary, SleepSummary, SocialProfile, StepsForDay } from "./garmin/endpoints";
+import type { WeightEntry } from "./metrics";
 
 /** Enough history for the weekday term in the forecast, and four weeks of load. */
 /** Fetched once; the range tabs slice this for display. */
@@ -23,6 +24,7 @@ export interface DashboardData {
   sleep: SleepSummary | null;
   steps: StepsForDay[];
   activities: Activity[];
+  weight: WeightEntry[];
 }
 
 export interface DashboardState {

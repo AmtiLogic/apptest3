@@ -111,6 +111,16 @@ export function mockResponse(path: string): unknown {
     }));
   }
 
+  if (path.startsWith("/weight-service/weight/")) {
+    // A slow downward drift, so the projection has something real to model.
+    return {
+      dailyWeightSummaries: Array.from({ length: 26 }, (_, i) => ({
+        calendarDate: isoDate(i - 27),
+        weight: Math.round((82.4 - i * 0.045 + Math.abs(seeded(i + 3)) * 0.5) * 1000),
+      })),
+    };
+  }
+
   if (path.startsWith("/activity-service/activity/")) {
     return {
       activityName: "Morning Run",

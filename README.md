@@ -188,6 +188,50 @@ assessment, and not presented as one. Direction arrows stay deliberately
 neutral in colour: "ramping up fast" is a caution, and a green arrow would say
 the opposite.
 
+## Every metric, the same treatment
+
+`src/lib/metrics.ts` is a registry: the forecast, typical-range band,
+percentile, momentum and projection are all generic over a daily series, so
+registering a metric gives it the whole treatment and its own screen at
+`/metric/<key>`.
+
+Tracked today, all built from endpoints verified to work: steps, training
+minutes, exercise distance, exercise calories, elevation, duration-weighted
+workout heart rate, and weight. Each row on the dashboard carries a sparkline
+and a week-on-week delta; tapping it opens the full trend, projection, typical
+range and record days.
+
+Two details that matter for reading them honestly:
+
+- **Zero is not always the floor.** Counts anchor their axis at zero; weight and
+  heart rate do not, because a body weight spanning a kilo becomes a flat line
+  against a zero baseline and every real change disappears.
+- **A trend is judged against the metric's own noise**, not a fixed percentage.
+  0.4% a week is nothing in a step count and a real drift in a body weight, so
+  the threshold compares the weekly change to the fit's residual spread and the
+  change is reported in the metric's units ("down about 0.3 kg a week") rather
+  than as a percentage.
+
+Days with no record are handled per metric: no workout means zero training
+minutes, but it does not mean a workout heart rate of zero — that is unknown,
+and charting it as zero would be a lie.
+
+## Body coverage
+
+Which parts of you are actually getting trained, inferred from what each
+activity type predominantly demands and weighted by duration. A month of
+running shows legs at 70%+ and flags back, chest and arms as least worked,
+with days since each was last trained.
+
+Garmin records the activity, not the muscles, so the card says so. Activity
+types with no mapping are counted separately and excluded rather than silently
+dropped.
+
+Weight arrives from a connected scale or manual entries. The endpoint is
+undocumented, so the response is normalised across the plausible shapes
+(grams or kilograms, several date keys, nested readings) and implausible values
+are discarded rather than charted. Its absence is normal and raises no error.
+
 ## Personal insights
 
 Most health apps report metrics side by side and leave you to guess at the

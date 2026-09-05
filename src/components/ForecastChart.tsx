@@ -51,6 +51,10 @@ export function ForecastChart({
   onScrub,
   /** The middle half of the user's own history, drawn as a reference band. */
   normalBand,
+  /** Anchor the scale at zero. False lets a narrow range fill the plot. */
+  zeroBaseline = true,
+  /** The metric's own formatter, so labels keep their precision and unit. */
+  formatValue,
 }: {
   history: HistoryPoint[];
   forecast: Prediction[];
@@ -60,6 +64,8 @@ export function ForecastChart({
   height?: number;
   onScrub?: (point: ScrubPoint | null) => void;
   normalBand?: TypicalRange | null;
+  zeroBaseline?: boolean;
+  formatValue?: (value: number) => string;
 }) {
   const [active, setActive] = useState<number | null>(null);
   const { ref, width } = useElementWidth<HTMLDivElement>();
@@ -72,16 +78,24 @@ export function ForecastChart({
     ...forecast.map((p) => ({ date: p.date, value: p.value, isForecast: true, lower: p.lower, upper: p.upper })),
   ];
 
-  const peak = Math.max(...all.map((p) => p.upper), goal ?? 0, normalBand?.high ?? 0, 1);
-  const ceiling = peak * 1.1;
-  const ticks = niceTicks(peak);
+  const highs = [...all.map((p) => p.upper), ...(goal ? [goal] : []), ...(normalBand ? [normalBand.high] : [])];
+  const lows = [...all.map((p) => p.lower), ...(goal ? [goal] : []), ...(normalBand ? [normalBand.low] : [])];
+  const peak = Math.max(...highs, 1);
+  const trough = Math.min(...lows);
+
+  // A weight series spans a kilo or two; anchored at zero it is a flat line
+  // with the whole plot empty beneath it.
+  const span = Math.max(peak - (zeroBaseline ? 0 : trough), 1e-6);
+  const floor = zeroBaseline ? 0 : trough - span * 0.15;
+  const ceiling = zeroBaseline ? peak * 1.1 : peak + span * 0.15;
+  const ticks = zeroBaseline ? niceTicks(peak) : [];
 
   const pad = minimal ? { top: 14, right: 2, bottom: 18, left: 2 } : PAD;
   const plotW = Math.max(width - pad.left - pad.right, 120);
   const plotH = HEIGHT - pad.top - pad.bottom;
   const step = all.length > 1 ? plotW / (all.length - 1) : 0;
   const xOf = (i: number) => pad.left + step * i;
-  const yOf = (v: number) => pad.top + plotH - (v / ceiling) * plotH;
+  const yOf = (v: number) => pad.top + plotH - ((v - floor) / (ceiling - floor)) * plotH;
 
   const line = (points: Array<{ value: number }>, offset: number) =>
     points.map((p, i) => `${i === 0 ? "M" : "L"}${xOf(i + offset)},${yOf(p.value)}`).join(" ");
@@ -124,6 +138,8 @@ export function ForecastChart({
     );
   })();
   const shown = active === null ? null : all[active];
+
+  const label = (value: number) => (formatValue ? formatValue(value) : Math.round(value).toLocaleString());
 
   const scrubTo = (index: number | null) => {
     setActive(index);
@@ -219,14 +235,18 @@ export function ForecastChart({
           ? extremes.map((point) => (
               <text
                 key={`extreme-${point.index}`}
-                x={Math.min(Math.max(xOf(point.index), pad.left + 18), width - pad.right - 18)}
+                // Half the rendered label, so an edge value is never clipped.
+                x={(() => {
+                  const half = (label(point.value).length * 5.6) / 2 + 2;
+                  return Math.min(Math.max(xOf(point.index), pad.left + half), width - pad.right - half);
+                })()}
                 y={point.isMax ? yOf(point.value) - 7 : yOf(point.value) + 14}
                 textAnchor="middle"
                 fontSize={10.5}
                 fontWeight={600}
                 fill="var(--text-secondary)"
               >
-                {Math.round(point.value).toLocaleString()}
+                {label(point.value)}
               </text>
             ))
           : null}
@@ -240,7 +260,7 @@ export function ForecastChart({
             fontWeight={600}
             fill="var(--text-primary)"
           >
-            {Math.round(last.value).toLocaleString()}
+            {label(last.value)}
           </text>
         ) : null}
 
@@ -312,11 +332,11 @@ export function ForecastChart({
       <figcaption className="chart-readout">
         {shown ? (
           <>
-            <strong>{Math.round(shown.value).toLocaleString()}</strong> {unitLabel} · {shortDate(shown.date)}
+            <strong>{label(shown.value)}</strong> · {shortDate(shown.date)}
             {shown.isForecast ? (
               <span className="muted">
                 {" "}
-                projected, {Math.round(shown.lower).toLocaleString()}–{Math.round(shown.upper).toLocaleString()}
+                projected, {label(shown.lower)}–{label(shown.upper)}
               </span>
             ) : null}
           </>
