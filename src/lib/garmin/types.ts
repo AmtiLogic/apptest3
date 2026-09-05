@@ -21,6 +21,9 @@ export interface GarminTokens {
 }
 
 export class GarminError extends Error {
+  /** HTTP status Garmin returned, when the failure came from a response. */
+  upstreamStatus?: number;
+
   constructor(
     message: string,
     readonly status: number = 502,

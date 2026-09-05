@@ -13,6 +13,16 @@ export const IS_STATIC_DEMO = process.env.NEXT_PUBLIC_STATIC_DEMO === "1";
 export function demoResponse(path: string): unknown {
   const [route] = path.split("?");
 
+  if (route.startsWith("/api/garmin/summary")) {
+    return {
+      profile: mockResponse("/userprofile-service/socialProfile"),
+      daily: mockResponse("/usersummary-service/usersummary/daily/demo"),
+      sleep: mockResponse("/wellness-service/wellness/dailySleepData/demo"),
+      steps: mockResponse("/usersummary-service/stats/steps/daily/a/b"),
+      activities: mockResponse("/activitylist-service/activities/search/activities"),
+      issues: [],
+    };
+  }
   if (route.startsWith("/api/garmin/profile")) {
     return mockResponse("/userprofile-service/socialProfile");
   }

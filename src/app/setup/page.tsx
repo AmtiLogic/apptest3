@@ -60,6 +60,16 @@ export default function SetupPage() {
       </section>
 
       <section className="card">
+        <h2>Something not loading?</h2>
+        <p>
+          <Link href="/diagnostics/">Run diagnostics</Link> to probe every Garmin
+          endpoint the app uses and see exactly which call fails and what it
+          returns. These are Garmin&rsquo;s private endpoints, undocumented and
+          liable to change, so this is the fastest way to find out what broke.
+        </p>
+      </section>
+
+      <section className="card">
         <h2>Worth knowing</h2>
         <p>
           This app signs in the way the Garmin Connect mobile app does and calls

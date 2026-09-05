@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { DemoBanner } from "@/components/DemoBanner";
+import { SyncIssues } from "@/components/SyncIssues";
 import { ForecastChart } from "@/components/ForecastChart";
 import { InsightCard } from "@/components/InsightCard";
 import { SleepChart, type SleepStage } from "@/components/SleepChart";
@@ -16,7 +17,11 @@ import { useDashboard } from "@/lib/useDashboard";
 const HORIZON_DAYS = 7;
 
 export default function DashboardPage() {
-  const { data, error, loading, syncing, syncedAt, refresh } = useDashboard();
+  const { data, error, issues, loading, syncing, syncedAt, refresh } = useDashboard();
+
+  // "Nothing recorded" and "could not load" look identical otherwise, which is
+  // exactly the confusion this whole screen is meant to avoid.
+  const failed = useMemo(() => new Set(issues.map((issue) => issue.source)), [issues]);
 
   const analysis = useMemo(() => {
     if (!data) return null;
@@ -46,7 +51,7 @@ export default function DashboardPage() {
     return (
       <main className="shell">
         <TopBar title="Today" onSync={refresh} syncing={syncing} syncedAt={syncedAt} />
-        <div className="notice error">{error}</div>
+        <SyncIssues error={error} issues={issues} />
       </main>
     );
   }
@@ -97,7 +102,7 @@ export default function DashboardPage() {
       />
       <DemoBanner />
 
-      {error ? <div className="notice error">Last sync failed: {error}</div> : null}
+      <SyncIssues error={error} issues={issues} />
 
       <InsightCard insight={analysis.steps} label={`Steps · next ${HORIZON_DAYS} days`} />
 
@@ -133,12 +138,16 @@ export default function DashboardPage() {
               ? `${analysis.history.length} days recorded, ${HORIZON_DAYS} days projected from the trend and your weekly pattern.`
               : "Recorded history. A projection appears once there are seven days."}
           </p>
-          <ForecastChart
-            history={analysis.history}
-            forecast={analysis.forecast.predictions}
-            goal={analysis.goal}
-            unitLabel="steps"
-          />
+          {failed.has("steps") ? (
+            <p className="empty failed">Step history could not be loaded — see the message above.</p>
+          ) : (
+            <ForecastChart
+              history={analysis.history}
+              forecast={analysis.forecast.predictions}
+              goal={analysis.goal}
+              unitLabel="steps"
+            />
+          )}
         </section>
 
         <div className="two-col">
@@ -150,7 +159,11 @@ export default function DashboardPage() {
               {night?.calendarDate ?? "—"}
               {formatHoursMinutes(night?.sleepTimeSeconds) ? ` · ${formatHoursMinutes(night?.sleepTimeSeconds)} asleep` : ""}
             </p>
-            <SleepChart stages={stages} />
+            {failed.has("sleep") ? (
+              <p className="empty failed">Sleep could not be loaded — see the message above.</p>
+            ) : (
+              <SleepChart stages={stages} />
+            )}
           </section>
         </div>
       </div>

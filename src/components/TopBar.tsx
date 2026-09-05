@@ -39,7 +39,9 @@ export function TopBar({
         <Link className="button" href="/activities">
           Activities
         </Link>
-        {onSync ? <SyncButton syncing={syncing} syncedAt={syncedAt} onSync={onSync} /> : null}
+        {onSync && !IS_STATIC_DEMO ? (
+          <SyncButton syncing={syncing} syncedAt={syncedAt} onSync={onSync} />
+        ) : null}
         {IS_STATIC_DEMO ? null : (
           <button type="button" onClick={signOut}>
             Sign out

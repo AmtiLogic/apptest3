@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getProfile } from "./garmin/endpoints";
 import { exchangeForOAuth2 } from "./garmin/sso";
 import { GarminError, type GarminTokens } from "./garmin/types";
-import { cacheBearer, cachedBearer, endSession, readSession, saveSession } from "./session";
+import { bearerFor, cacheBearer } from "./bearerCache";
+import { endSession, readSession, saveSession } from "./session";
 
 export interface AuthedContext {
   tokens: GarminTokens;
@@ -20,12 +21,7 @@ export async function requireSession(): Promise<AuthedContext> {
   const session = await readSession();
   if (!session) throw new GarminError("Not signed in", 401, "unauthenticated");
 
-  let oauth2 = cachedBearer(session.oauth1);
-  if (!oauth2) {
-    oauth2 = await exchangeForOAuth2(session.oauth1);
-    cacheBearer(session.oauth1, oauth2);
-  }
-
+  const oauth2 = await bearerFor(session.oauth1, exchangeForOAuth2);
   const tokens: GarminTokens = { oauth1: session.oauth1, oauth2 };
   if (session.displayName) return { tokens, displayName: session.displayName };
 

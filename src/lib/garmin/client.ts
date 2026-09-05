@@ -46,16 +46,22 @@ export async function connectGet<T>(
   }
 
   if (res.status === 401 || res.status === 403) {
-    throw new GarminError("Garmin session is no longer valid. Sign in again.", 401, "unauthenticated");
+    const error = new GarminError("Garmin session is no longer valid. Sign in again.", 401, "unauthenticated");
+    error.upstreamStatus = res.status;
+    throw error;
   }
   if (res.status === 429) {
-    throw new GarminError("Garmin is rate-limiting requests. Try again shortly.", 429, "rate_limited");
+    const error = new GarminError("Garmin is rate-limiting requests. Try again shortly.", 429, "rate_limited");
+    error.upstreamStatus = 429;
+    throw error;
   }
   if (res.status === 204) {
     return { data: null as T, tokens: refreshed };
   }
   if (!res.ok) {
-    throw new GarminError(`Garmin returned HTTP ${res.status} for ${path}`, 502);
+    const error = new GarminError(`Garmin returned HTTP ${res.status} for ${path}`, 502);
+    error.upstreamStatus = res.status;
+    throw error;
   }
 
   const text = await res.text();

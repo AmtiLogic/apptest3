@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import { MFA_COOKIE, SESSION_COOKIE } from "./cookie-names";
 import { seal, unseal } from "./crypto-cookie";
 import type { MfaChallenge } from "./garmin/sso";
-import type { GarminTokens, OAuth1Token, OAuth2Token } from "./garmin/types";
+import { cacheBearer, dropBearer } from "./bearerCache";
+import type { GarminTokens, OAuth1Token } from "./garmin/types";
 
 export { MFA_COOKIE, SESSION_COOKIE };
 
@@ -24,34 +25,6 @@ const COOKIE_OPTIONS = {
   secure: process.env.NODE_ENV === "production",
   path: "/",
 } as const;
-
-/**
- * Bearer tokens are large and short-lived, so they stay out of the cookie and
- * live in a per-process cache instead. A cold instance simply misses and mints a
- * fresh one from the OAuth1 token in the cookie -- correctness never depends on
- * this surviving.
- */
-const bearerCache = new Map<string, OAuth2Token>();
-
-function cacheKey(oauth1: OAuth1Token): string {
-  return createHash("sha256").update(oauth1.oauthToken).digest("base64url");
-}
-
-export function cacheBearer(oauth1: OAuth1Token, oauth2: OAuth2Token): void {
-  // Bound the map: a personal deployment has one user, but never grow without limit.
-  if (bearerCache.size > 32) bearerCache.clear();
-  bearerCache.set(cacheKey(oauth1), oauth2);
-}
-
-export function cachedBearer(oauth1: OAuth1Token): OAuth2Token | null {
-  const token = bearerCache.get(cacheKey(oauth1));
-  if (!token) return null;
-  if (token.expiresAt - 60_000 <= Date.now()) {
-    bearerCache.delete(cacheKey(oauth1));
-    return null;
-  }
-  return token;
-}
 
 /** Writes a sealed value across as many numbered cookies as it needs. */
 async function writeChunked(name: string, value: string, maxAge: number): Promise<void> {
@@ -105,7 +78,7 @@ export async function saveSession(payload: SessionPayload): Promise<void> {
 
 export async function endSession(): Promise<void> {
   const session = await readSession();
-  if (session) bearerCache.delete(cacheKey(session.oauth1));
+  if (session) dropBearer(session.oauth1);
   await clearChunked(SESSION_COOKIE);
   await clearChunked(MFA_COOKIE);
 }

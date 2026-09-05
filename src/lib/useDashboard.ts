@@ -7,6 +7,14 @@ import type { Activity, DailySummary, SleepSummary, SocialProfile, StepsForDay }
 /** Enough history for the weekday term in the forecast, and four weeks of load. */
 export const HISTORY_DAYS = 28;
 
+export type SourceKey = "profile" | "daily" | "sleep" | "steps" | "activities";
+
+export interface SourceIssue {
+  source: SourceKey;
+  label: string;
+  message: string;
+}
+
 export interface DashboardData {
   profile: SocialProfile;
   daily: DailySummary | null;
@@ -17,18 +25,24 @@ export interface DashboardData {
 
 export interface DashboardState {
   data: DashboardData | null;
+  /** Set when the sync could not complete at all. */
   error: string | null;
-  /** True for the first load, when there is nothing to show yet. */
+  /** Sources that failed while others succeeded. Never silently discarded. */
+  issues: SourceIssue[];
   loading: boolean;
-  /** True for a refresh, when the previous data stays on screen. */
   syncing: boolean;
   syncedAt: Date | null;
   refresh: () => void;
 }
 
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export function useDashboard(): DashboardState {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [issues, setIssues] = useState<SourceIssue[]>([]);
   const [syncing, setSyncing] = useState(true);
   const [syncedAt, setSyncedAt] = useState<Date | null>(null);
   const inFlight = useRef(false);
@@ -40,20 +54,20 @@ export function useDashboard(): DashboardState {
     setSyncing(true);
 
     try {
-      const profile = await apiGet<SocialProfile>("/api/garmin/profile");
-      // Settled rather than all: one missing night should not blank the page.
-      const [daily, sleep, steps, activities] = await Promise.all([
-        apiGet<DailySummary>("/api/garmin/daily").catch(() => null),
-        apiGet<SleepSummary>("/api/garmin/sleep").catch(() => null),
-        apiGet<StepsForDay[]>(`/api/garmin/steps?days=${HISTORY_DAYS}`).catch(() => []),
-        apiGet<Activity[]>("/api/garmin/activities?limit=60").catch(() => []),
-      ]);
+      // One request: the server resolves the session once and fetches every
+      // section, reporting per-section failures rather than hiding them.
+      const summary = await apiGet<DashboardData & { issues: SourceIssue[] }>(
+        `/api/garmin/summary?days=${HISTORY_DAYS}`,
+      );
 
-      setData({ profile, daily, sleep, steps: steps ?? [], activities: activities ?? [] });
+      const { issues: found = [], ...rest } = summary;
+      setData(rest);
+      setIssues(found);
+      setError(found.length === 4 ? "Signed in, but Garmin returned no data for any section." : null);
       setSyncedAt(new Date());
-      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load data");
+      setError(messageOf(err));
+      setIssues([]);
     } finally {
       inFlight.current = false;
       setSyncing(false);
@@ -64,7 +78,7 @@ export function useDashboard(): DashboardState {
     void refresh();
   }, [refresh]);
 
-  return { data, error, loading: data === null && syncing, syncing, syncedAt, refresh };
+  return { data, error, issues, loading: data === null && syncing, syncing, syncedAt, refresh };
 }
 
 export function relativeTime(date: Date, now = new Date()): string {

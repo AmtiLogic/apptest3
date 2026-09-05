@@ -150,6 +150,7 @@ or put your host's own access control in front of it.
 | `/activities` | Paged activity history — type, date, distance, time, average HR |
 | `/activities/[id]` | Per-activity detail — pace, moving time, elevation, HR, cadence, power |
 | `/setup` | How to connect real data; shown from the sample-data banner |
+| `/diagnostics` | Per-endpoint probe: path, status, timing, response shape |
 
 ## Projections
 
@@ -192,6 +193,24 @@ The **Sync** control in the header refetches everything and shows when it last
 succeeded. It is disabled mid-flight and guarded against repeat taps, so
 hammering it cannot stack concurrent requests. A failed sync leaves the previous
 data on screen with an error strip above it, rather than blanking the page.
+
+## When something does not load
+
+These calls hit Garmin's private endpoints. They are undocumented, unversioned,
+and change without notice, so the app is built to tell you when one breaks
+rather than quietly showing you an empty chart.
+
+- The dashboard fetches everything through a single `/api/garmin/summary`
+  request. One round trip from the phone, and one session resolution — fetching
+  the five sections separately meant five simultaneous token exchanges on a cold
+  instance, which is slow and a good way to get rate-limited.
+- A section that fails is **named** at the top of the dashboard with the error
+  Garmin returned. It is never silently turned into empty data.
+- A card whose data failed says so, instead of showing the same "nothing
+  recorded" message it would show on a genuinely quiet day.
+- **`/diagnostics`** probes every endpoint one at a time and reports the path,
+  HTTP status, timing, and the shape of what came back. It has a *Copy report*
+  button — that report is the fastest way to get a broken endpoint fixed.
 
 ## Architecture
 

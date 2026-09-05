@@ -62,8 +62,19 @@ export interface StepsForDay {
   stepGoal: number | null;
 }
 
+export const PATHS = {
+  profile: () => "/userprofile-service/socialProfile",
+  daily: (displayName: string) =>
+    `/usersummary-service/usersummary/daily/${encodeURIComponent(displayName)}`,
+  sleep: (displayName: string) =>
+    `/wellness-service/wellness/dailySleepData/${encodeURIComponent(displayName)}`,
+  steps: (start: string, end: string) => `/usersummary-service/stats/steps/daily/${start}/${end}`,
+  activities: () => "/activitylist-service/activities/search/activities",
+  activity: (id: string) => `/activity-service/activity/${encodeURIComponent(id)}`,
+} as const;
+
 export function getProfile(tokens: GarminTokens): Promise<ConnectResponse<SocialProfile>> {
-  return connectGet<SocialProfile>(tokens, "/userprofile-service/socialProfile");
+  return connectGet<SocialProfile>(tokens, PATHS.profile());
 }
 
 export function getDailySummary(
@@ -71,11 +82,7 @@ export function getDailySummary(
   displayName: string,
   date: string,
 ): Promise<ConnectResponse<DailySummary>> {
-  return connectGet<DailySummary>(
-    tokens,
-    `/usersummary-service/usersummary/daily/${encodeURIComponent(displayName)}`,
-    { calendarDate: date },
-  );
+  return connectGet<DailySummary>(tokens, PATHS.daily(displayName), { calendarDate: date });
 }
 
 export function getSleep(
@@ -83,11 +90,10 @@ export function getSleep(
   displayName: string,
   date: string,
 ): Promise<ConnectResponse<SleepSummary>> {
-  return connectGet<SleepSummary>(
-    tokens,
-    `/wellness-service/wellness/dailySleepData/${encodeURIComponent(displayName)}`,
-    { date, nonSleepBufferMinutes: 60 },
-  );
+  return connectGet<SleepSummary>(tokens, PATHS.sleep(displayName), {
+    date,
+    nonSleepBufferMinutes: 60,
+  });
 }
 
 export function getStepsRange(
@@ -95,10 +101,7 @@ export function getStepsRange(
   start: string,
   end: string,
 ): Promise<ConnectResponse<StepsForDay[]>> {
-  return connectGet<StepsForDay[]>(
-    tokens,
-    `/usersummary-service/stats/steps/daily/${start}/${end}`,
-  );
+  return connectGet<StepsForDay[]>(tokens, PATHS.steps(start, end));
 }
 
 export function getActivities(
@@ -106,18 +109,12 @@ export function getActivities(
   start = 0,
   limit = 20,
 ): Promise<ConnectResponse<Activity[]>> {
-  return connectGet<Activity[]>(tokens, "/activitylist-service/activities/search/activities", {
-    start,
-    limit,
-  });
+  return connectGet<Activity[]>(tokens, PATHS.activities(), { start, limit });
 }
 
 export function getActivity(
   tokens: GarminTokens,
   activityId: string,
 ): Promise<ConnectResponse<Record<string, unknown>>> {
-  return connectGet<Record<string, unknown>>(
-    tokens,
-    `/activity-service/activity/${encodeURIComponent(activityId)}`,
-  );
+  return connectGet<Record<string, unknown>>(tokens, PATHS.activity(activityId));
 }

@@ -653,3 +653,113 @@ input:focus {
 .legend-item svg {
   flex: none;
 }
+
+/* --- Sync failures ------------------------------------------------------ */
+
+.notice.issues {
+  display: block;
+  text-align: left;
+}
+
+.notice.issues ul {
+  margin: 8px 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.notice.issues li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  padding: 5px 0;
+  border-top: 1px solid var(--border);
+}
+
+.issue-label {
+  font-weight: 500;
+  min-width: 128px;
+}
+
+.issue-message {
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.notice.issues p {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+}
+
+.notice.issues a {
+  color: var(--series-1);
+}
+
+/* --- Diagnostics -------------------------------------------------------- */
+
+.check {
+  display: flex;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--gridline);
+}
+
+.check:last-child {
+  border-bottom: none;
+}
+
+.check-body {
+  min-width: 0;
+}
+
+.check-name {
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+
+.check code {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+  display: block;
+}
+
+.check-error {
+  color: var(--status-critical);
+  font-size: 13px;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.pill {
+  flex: none;
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 3px 7px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+}
+
+.pill.ok {
+  color: var(--status-good);
+}
+
+.pill.bad {
+  color: var(--status-critical);
+}
+
+.report {
+  background: var(--plane);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  overflow-x: auto;
+  white-space: pre;
+  margin-top: 10px;
+}
+
+.empty.failed {
+  color: var(--status-critical);
+}
